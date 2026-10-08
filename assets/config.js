@@ -2,7 +2,7 @@
 window.SMART_CONFIG = {
   // Tautan CSV dari Google Sheets (File > Bagikan > Publikasikan ke web > pilih sheet > CSV).
   // Kosongkan untuk memakai file data/data.csv di repositori.
-  SHEET_CSV_URL: "",
+  SHEET_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTZqgHUgDRXs14VKsKvcj45GBZqFA08PC5U_76BVrR0upSuDcIIGISAhgi6M5f5CjPhuw1lWAb6ekao/pub?output=csv",
 
   // File cadangan bila Google Sheets tidak bisa dibaca.
   FALLBACK_CSV: "data/data.csv",
