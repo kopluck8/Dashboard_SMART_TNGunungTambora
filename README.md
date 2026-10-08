@@ -6,7 +6,7 @@ Situs statis (HTML + JavaScript, tanpa server) untuk GitHub Pages. Semua angka, 
 
 | File | Isi |
 |---|---|
-| `index.html` | Dashboard kawasan: ringkasan, kategori, tren bulanan, rekap per SPTN dan resor (bisa diklik untuk mengerucut ke satu SPTN atau resor), peta, daftar temuan yang perlu perhatian |
+| `index.html` | Overview kawasan: ringkasan, kategori, tren bulanan, rekap per SPTN dan resor (bisa diklik untuk mengerucut ke satu SPTN atau resor), peta, daftar temuan yang perlu perhatian |
 | `aktivitas-manusia.html` | Kategori 0: Aktivitas Manusia |
 | `satwa-liar.html` | Kategori 0: Satwa Liar |
 | `tumbuhan.html` | Kategori 0: Tumbuhan |
@@ -23,7 +23,7 @@ Tambahkan `?embed=1` di akhir alamat untuk menyembunyikan kepala halaman saat di
 
 ## Sumber data
 
-1. Impor CSV ekspor SMART Desktop ke Google Sheets (biarkan nama kolom seperti aslinya). Format kolom `Waypoint Date` sebaiknya tetap teks seperti `Jul 23, 2026`.
+1. Impor CSV ekspor SMART Desktop ke Google Sheets. Judul kolom boleh memakai spasi atau garis bawah. Data tahun lalu boleh digabung di sheet yang sama; tampilan awal hanya menampilkan tahun `TAHUN_AWAL` (2026), tahun lain bisa dipilih di filter bulan.
 2. Tambahkan kolom **Resor** berisi nama resor tiap baris. Nama yang dikenali (boleh tanpa kata "Resor", huruf besar/kecil bebas):
    - SPTN Wilayah I Kore: Resor Piong, Resor Oi Katupa, Resor Kawinda Toi
    - SPTN Wilayah II Pekat: Resor Doroncanga, Resor Doropeti, Resor Pancasila
@@ -34,27 +34,36 @@ Tambahkan `?embed=1` di akhir alamat untuk menyembunyikan kepala halaman saat di
 
 Bila tautan kosong atau tidak bisa dibaca, dashboard memakai `data/data.csv`.
 
-## Privasi nama pelaku
+## Privasi
 
-Pada kategori Aktivitas Manusia, kolom `Nama pelaku`, `Nama pelaku indikatif`, `Nama kelompok`, dan `Kode Tanda Ternak` dikosongkan oleh dashboard dan sudah dikosongkan di `data/data.csv`. Daftarnya diatur di `SEMBUNYIKAN` pada `assets/config.js`.
+Saat ini semua nama (masyarakat, pelaku indikatif, kelompok, kode ternak) ditampilkan, sesuai keputusan 8 Oktober 2026. Bila nanti perlu disembunyikan lagi, isi `SEMBUNYIKAN` di `assets/config.js`, misalnya `"Aktivitas Manusia": ["Nama pelaku", "Nama pelaku indikatif"]`. Ingat bahwa CSV yang dipublikasikan dari Google Sheets tetap bisa dibuka siapa saja yang tahu tautannya.
 
-Namun CSV yang dipublikasikan dari Google Sheets bisa dibuka siapa saja yang tahu tautannya. Karena itu, **jangan publikasikan sheet data mentah**. Buat tab baru (misalnya `Publik`), isi sel A1 dengan rumus di bawah, lalu publikasikan tab `Publik` saja. Ganti `Data` dengan nama tab data mentahmu.
+## Capaian grid dan ST terlaksana
 
-```
-=LET(d, Data!A1:BF, h, INDEX(d, 1), k, MATCH("Observation Category 0", h, 0),
-  MAKEARRAY(ROWS(d), COLUMNS(d), LAMBDA(r, c,
-    IF(AND(r > 1, INDEX(d, r, k) = "Aktivitas Manusia",
-           OR(INDEX(h, c) = {"Nama pelaku", "Nama pelaku indikatif", "Nama kelompok", "Kode Tanda Ternak"})),
-       "", INDEX(d, r, c)))))
-```
+1. Di spreadsheet yang sama, buat tab baru, misalnya `Capaian Grid`, berisi 2 kolom: `Capaian Grid Tahun` dan `Jumlah Capaian`. Satu baris per tahun (contoh: `2026 | 87`).
+2. Buat tab `ST Terlaksana` dengan pola yang sama: `Tahun` dan `Jumlah ST`.
+3. Publikasikan masing-masing tab ke web sebagai CSV, lalu tempel tautannya di `CAPAIAN` pada `assets/config.js`.
 
-Tab `Publik` ikut berubah setiap kali tab data diperbarui.
+Angka yang tampil di Overview adalah jumlah untuk tahun yang tercakup filter bulan.
+
+## Layer peta
+
+Letakkan file berikut di folder `assets/`: `tambora.geojson` (batas kawasan), `resor.geojson` (batas resor), `grid.geojson` (grid pengelolaan), `jalur.geojson` (jalur). Layer ini tidak dimuat sampai dicentang di tombol layer peta, jadi halaman tetap ringan. Gunakan koordinat WGS84 (EPSG:4326). Nama file, label, dan warna bisa diubah di `LAYER_PETA` pada `assets/config.js`.
+
+## Logo
+
+Simpan logo sebagai `assets/logo.png`. Bila file belum ada, kepala halaman tampil tanpa logo.
+
+## Status perlindungan dan IUCN
+
+Kolom Status dari SMART tidak dipakai. Status diambil dari `assets/status-spesies.js` berdasarkan nama ilmiah: perlindungan menurut Lampiran Permen LHK P.106/MENLHK/SETJEN/KUM.1/12/2018, dan kategori Daftar Merah IUCN. Jenis baru yang belum ada di file itu tampil sebagai "Belum dicek"; tambahkan satu baris untuk jenis tersebut.
 
 ## Struktur
 
 - `assets/app.js`: semua logika olah data dan tampilan
 - `assets/model.js`: kategori, sub-kategori, dan atribut dari `datamodel.xml` SMART
-- `assets/config.js`: tautan data dan nama kolom resor
+- `assets/config.js`: tautan data, resor, capaian, layer peta, logo
+- `assets/status-spesies.js`: status perlindungan dan IUCN per jenis
 - `assets/style.css`: tampilan
 - `assets/vendor/`: Chart.js 4.4.1, PapaParse 5.4.1, Leaflet 1.9.4 (disimpan lokal agar tidak bergantung pada CDN)
 
