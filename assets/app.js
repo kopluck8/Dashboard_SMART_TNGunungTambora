@@ -60,23 +60,56 @@
     let m = /^([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2}),?\s+(\d{4})/.exec(s);
     if (m && m[1] in EN) return new Date(+m[3], EN[m[1]], +m[2]);
     m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s); if (m) return new Date(+m[1], m[2] - 1, +m[3]);
-    m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s); if (m) return new Date(+m[3], m[2] - 1, +m[1]);
+    // Tanggal yang sudah diubah Google Sheets: dd/mm/yyyy (lokal Indonesia) atau m/d/yyyy (lokal AS).
+    m = /^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})/.exec(s);
+    if (m) { let [dd, mm] = [+m[1], +m[2]]; if (mm > 12 && dd <= 12) [dd, mm] = [mm, dd]; return new Date(+m[3], mm - 1, dd); }
     const d = new Date(s); return isNaN(d) ? null : d;
   }
 
   /* ---------------- data ---------------- */
+  // Nama kolom yang dipakai dashboard; judul kolom di sheet dicocokkan tanpa peduli huruf besar/kecil dan spasi.
+  const CORE = ["Waypoint ID", "Waypoint Date", "Waypoint Time", "X", "Y", "Observation Category 0", "Observation Category 1", "Observation Group"];
+  // Kunci pencocokan: huruf kecil tanpa spasi/tanda baca, sehingga "Observation_Category_0", "Azimuth__derajat_"
+  // atau "No__pal" (judul kolom yang sudah diubah Google Sheets/SMART) tetap dikenali.
+  const hkey = (h) => String(h || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const KNOWN = new Map(CORE.concat(...M.map((c) => c.fields.concat(...c.subs.map((s) => s.fields)))).map((h) => [hkey(h), h]));
+  const cleanHead = (h) => String(h || "").replace(/^\uFEFF/, "").replace(/\s+/g, " ").trim();
   function loadCSV(url) {
     return new Promise((res, rej) => Papa.parse(url, {
-      download: true, header: true, skipEmptyLines: true,
-      complete: (r) => (r.data.length ? res(r.data) : rej(new Error("kosong"))), error: rej,
+      download: true, header: false, skipEmptyLines: "greedy",
+      complete: (r) => {
+        const grid = r.data;
+        // Baris judul boleh tidak di baris pertama (misalnya ada judul tabel di atasnya).
+        const hi = grid.slice(0, 15).findIndex((row) => row.some((c) => hkey(c) === "observationcategory0"));
+        if (hi < 0) {
+          const e = new Error("kolom tidak dikenali");
+          e.diag = { rows: grid.length, head: (grid[0] || []).slice(0, 6).map(cleanHead) };
+          return rej(e);
+        }
+        const head = grid[hi].map((h) => { const c = cleanHead(h); return KNOWN.get(hkey(c)) || c; });
+        const data = grid.slice(hi + 1).map((row) => Object.fromEntries(head.map((h, i) => [h, row[i] ?? ""])));
+        const n = data.filter((x) => String(x["Observation Category 0"] || "").trim()).length;
+        if (!n) { const e = new Error("tidak ada baris berisi"); e.diag = { rows: data.length, head: head.slice(0, 6) }; return rej(e); }
+        res(data);
+      },
+      error: rej,
     }));
   }
   async function load() {
     if (C.SHEET_CSV_URL) {
       try { const d = await loadCSV(C.SHEET_CSV_URL); S.source = "Google Sheets"; return d; }
-      catch (e) { console.warn("Google Sheets tidak terbaca, memakai file cadangan", e); }
+      catch (e) { console.warn("Google Sheets tidak terbaca, memakai file cadangan", e); S.sheetError = e; }
     }
     const d = await loadCSV(C.FALLBACK_CSV); S.source = C.FALLBACK_CSV; return d;
+  }
+  function sheetNotice() {
+    const e = S.sheetError;
+    if (!e) return "";
+    const d = e.diag;
+    const why = !d ? "Tautan tidak bisa dibuka. Pastikan sheet sudah dipublikasikan ke web dalam format CSV dan tautannya diakhiri <code>output=csv</code>."
+      : d.rows <= 1 && !d.head.filter(Boolean).length ? "Sheet yang dipublikasikan kosong. Kemungkinan tab yang dipilih saat publikasi bukan tab data, atau rumus di tab Publik menghasilkan error."
+      : `Sheet terbaca (${fmt(d.rows)} baris), tetapi kolom <b>Observation Category 0</b> tidak ditemukan atau kosong. Kolom pertama yang terbaca: <code>${d.head.map(esc).join(" | ") || "(kosong)"}</code>.`;
+    return `<div class="notice"><strong>Data Google Sheets belum terbaca, sementara memakai data cadangan.</strong> ${why}</div>`;
   }
   const RESOR_CANON = new Map();
   const SPTN_OF = new Map();
@@ -93,7 +126,7 @@
   const isHidden = (c0, f) => (C.SEMBUNYIKAN?.[c0] || []).includes(f);
   function normalize(raw) {
     const cols = Object.keys(raw[0] || {});
-    const rc = cols.find((c) => C.RESOR_COLUMNS.some((x) => x.toLowerCase() === c.trim().toLowerCase()));
+    const rc = cols.find((c) => C.RESOR_COLUMNS.some((x) => hkey(x) === hkey(c)));
     S.hasResor = !!rc;
     const rows = raw.filter((r) => (r["Observation Category 0"] || "").trim()).map((r) => {
       const d = parseDate(r["Waypoint Date"]);
@@ -527,6 +560,7 @@
     Chart.defaults.borderColor = css("--line");
     const cat = M.find((c) => c.slug === PAGE);
     if (cat) renderKategori(cat); else renderKawasan();
+    if (S.sheetError) $("#content").insertAdjacentHTML("afterbegin", sheetNotice());
   }
 
   async function init() {
