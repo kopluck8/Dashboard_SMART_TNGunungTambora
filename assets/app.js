@@ -56,6 +56,15 @@
     return [...m.entries()].sort((a, b) => b[1] - a[1]);
   }
   function num(s) { const n = parseFloat(String(s).replace(",", ".")); return isFinite(n) ? n : null; }
+  // Angka dari tab capaian: menerima format Indonesia (1.234,5) maupun Inggris (1,234.5).
+  function numCapaian(s) {
+    let t = String(s == null ? "" : s).replace(/[^\d.,-]/g, "");
+    const d = t.lastIndexOf("."), c = t.lastIndexOf(",");
+    if (d >= 0 && c >= 0) t = d > c ? t.replace(/,/g, "") : t.replace(/\./g, "").replace(",", ".");
+    else if (c >= 0) t = (t.match(/,/g).length > 1 ? t.replace(/,/g, "") : t.replace(",", "."));
+    else if (d >= 0 && t.match(/\./g).length > 1) t = t.replace(/\./g, "");
+    return num(t);
+  }
   function splitSpecies(s) {
     // Format SMART "Lokal - Indonesia - Ilmiah"; bagian boleh kosong ("Katowi - - Palaquium amboinense").
     // Dua bagian dibaca sebagai "Indonesia - Ilmiah". Tanda hubung di dalam kata (Kirik-kirik) tidak memisah.
@@ -118,7 +127,7 @@
         let vc = item.kolom ? head.indexOf(hkey(item.kolom)) : -1;
         if (vc < 0) vc = head.findIndex((h, i) => i !== yc);
         const data = {};
-        for (const row of g.slice(1)) { const y = parseInt(row[yc], 10), v = num(row[vc]); if (y && v != null) data[y] = (data[y] || 0) + v; }
+        for (const row of g.slice(1)) { const y = parseInt(row[yc], 10), v = numCapaian(row[vc]); if (y && v != null) data[y] = (data[y] || 0) + v; }
         res({ ...item, data });
       },
       error: () => res({ ...item, data: null, err: true }),
@@ -254,7 +263,7 @@
 
   /* ---------------- components ---------------- */
   function kpis(items) {
-    return `<div class="kpis">${items.map((k) => `<div class="kpi ${k.tone || ""}"><span class="v">${k.v}</span><span class="l">${esc(k.l)}</span>${k.n ? `<span class="n">${esc(k.n)}</span>` : ""}</div>`).join("")}</div>`;
+    return `<div class="kpis">${items.map((k) => `<div class="kpi ${k.tone || ""}"><span class="v${String(k.v).length > 6 ? " long" : ""}">${k.v}</span><span class="l">${esc(k.l)}</span>${k.n ? `<span class="n">${esc(k.n)}</span>` : ""}</div>`).join("")}</div>`;
   }
   function hbars(entries, opts = {}) {
     const max = Math.max(1, ...entries.map((e) => e[1]));
@@ -423,7 +432,8 @@
       if (!c.data) return { v: "–", l: c.label, n: "Sheet capaian tidak terbaca" };
       const ys = Object.keys(c.data).map(Number).filter((y) => y >= y0 && y <= y1);
       if (!ys.length) return { v: "–", l: c.label, n: "Belum ada data tahun " + (y0 === y1 ? y0 : y0 + "–" + y1) };
-      return { v: fmt(ys.reduce((a, y) => a + c.data[y], 0)), l: c.label, n: "Tahun " + ys.sort().join(", ") + " · tingkat kawasan" };
+      const sum = ys.reduce((a, y) => a + c.data[y], 0);
+      return { v: fmt(sum, c.desimal || 0), l: c.label + (c.satuan ? " (" + c.satuan + ")" : ""), n: "Tahun " + ys.sort().join(", ") + " · tingkat kawasan" };
     });
   }
   // Ringkasan yang paling relevan untuk tiap kategori 0 di kartu Overview.
