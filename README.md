@@ -38,11 +38,12 @@ Bila tautan kosong atau tidak bisa dibaca, dashboard memakai `data/data.csv`.
 
 Saat ini semua nama (masyarakat, pelaku indikatif, kelompok, kode ternak) ditampilkan, sesuai keputusan 8 Oktober 2026. Bila nanti perlu disembunyikan lagi, isi `SEMBUNYIKAN` di `assets/config.js`, misalnya `"Aktivitas Manusia": ["Nama pelaku", "Nama pelaku indikatif"]`. Ingat bahwa CSV yang dipublikasikan dari Google Sheets tetap bisa dibuka siapa saja yang tahu tautannya.
 
-## Capaian grid dan ST terlaksana
+## Capaian grid, ST terlaksana, dan coverage area
 
 1. Di spreadsheet yang sama, buat tab baru, misalnya `Capaian Grid`, berisi 2 kolom: `Capaian Grid Tahun` dan `Jumlah Capaian`. Satu baris per tahun (contoh: `2026 | 87`).
 2. Buat tab `ST Terlaksana` dengan pola yang sama: `Tahun` dan `Jumlah ST`.
-3. Publikasikan masing-masing tab ke web sebagai CSV, lalu tempel tautannya di `CAPAIAN` pada `assets/config.js`.
+3. Buat tab `Capaian Coverage Area` dengan pola yang sama: `Tahun` dan `Luas (ha)`. Angka desimal boleh memakai koma atau titik.
+4. Publikasikan masing-masing tab ke web sebagai CSV, lalu tempel tautannya di `CAPAIAN` pada `assets/config.js`.
 
 Angka yang tampil di Overview adalah jumlah untuk tahun yang tercakup filter bulan.
 
