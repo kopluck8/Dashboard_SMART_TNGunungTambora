@@ -78,7 +78,6 @@ window.SMART_MODEL = [
      "Tipe temuan",
      "Jumlah",
      "Satuan",
-     "Jenis satwa",
      "Usia temuan",
      "Keaktifan",
      "Modus penggunaan kawasan",

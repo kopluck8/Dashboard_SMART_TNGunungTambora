@@ -2,7 +2,7 @@
 window.SMART_CONFIG = {
   // Tautan CSV dari Google Sheets (File > Bagikan > Publikasikan ke web > pilih sheet > CSV).
   // Kosongkan untuk memakai file data/data.csv di repositori.
-  SHEET_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTZqgHUgDRXs14VKsKvcj45GBZqFA08PC5U_76BVrR0upSuDcIIGISAhgi6M5f5CjPhuw1lWAb6ekao/pub?output=csv",
+  SHEET_CSV_URL: "",
 
   // File cadangan bila Google Sheets tidak bisa dibaca.
   FALLBACK_CSV: "data/data.csv",
@@ -17,10 +17,40 @@ window.SMART_CONFIG = {
     { sptn: "SPTN Wilayah II Pekat", resor: ["Resor Doroncanga", "Resor Doropeti", "Resor Pancasila"] },
   ],
 
-  // Kolom yang dikosongkan demi privasi pelaku, hanya pada kategori yang disebut.
-  SEMBUNYIKAN: {
-    "Aktivitas Manusia": ["Nama pelaku", "Nama pelaku indikatif", "Nama kelompok", "Kode Tanda Ternak"],
-  },
+  // Kolom yang dikosongkan demi privasi, per kategori 0. Saat ini semua dibuka (keputusan 8 Okt 2026);
+  // isi lagi bila nanti diperlukan, misalnya: "Aktivitas Manusia": ["Nama pelaku", "Nama pelaku indikatif"].
+  SEMBUNYIKAN: {},
+
+  // Tampilan awal hanya menampilkan tahun ini; tahun lain tetap bisa dipilih di filter bulan.
+  TAHUN_AWAL: 2026,
+
+  // Capaian yang dihitung manual, dari tab Google Sheets terpisah yang dipublikasikan sebagai CSV.
+  // Tiap tab cukup 2 kolom: kolom tahun (misalnya "Capaian Grid Tahun") dan kolom jumlah (misalnya "Jumlah Capaian").
+  // Bila keduanya ada di satu tab, pakai tautan yang sama dan isi "kolom" dengan judul kolom jumlahnya.
+  CAPAIAN: [
+    { label: "Capaian grid pengelolaan", url: "", kolom: "" },
+    { label: "ST terlaksana", url: "", kolom: "" },
+  ],
+
+  // Layer peta tambahan (GeoJSON di folder assets). Dimuat hanya saat dicentang di peta.
+  LAYER_PETA: [
+    { file: "assets/tambora.geojson", label: "Batas kawasan", warna: "#f2f2f2", tebal: 2.5 },
+    { file: "assets/resor.geojson", label: "Batas resor", warna: "#ffd166", tebal: 2, putus: true },
+    { file: "assets/grid.geojson", label: "Grid pengelolaan", warna: "#9ad1c4", tebal: 0.8 },
+    { file: "assets/jalur.geojson", label: "Jalur", warna: "#ff8c42", tebal: 2 },
+  ],
+
+  // Logo di kepala halaman (disembunyikan otomatis bila file belum ada).
+  LOGO: "assets/logo.png",
+
+  // Nama sumber data yang ditampilkan di halaman.
+  SUMBER: "Rekap Data SMART Patrol TNGT",
+
+  // Nama tampilan untuk sub-kategori/kolom tertentu (nama asli SMART di kiri).
+  ALIAS: { "Pelaku": "Masyarakat", "Nama pelaku": "Nama Masyarakat" },
+
+  // Sub-kategori yang kolom Jumlah-nya hanya dihitung bila satuannya hektar.
+  JUMLAH_HEKTAR_SAJA: ["Kebakaran Hutan dan Lahan"],
 
   // Label untuk baris yang kolom resornya masih kosong.
   RESOR_KOSONG: "Resor belum diisi",

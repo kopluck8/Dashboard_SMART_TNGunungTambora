@@ -9,6 +9,11 @@
   // Jenis isian, dipakai untuk memilih cara meringkas tiap atribut data model.
   const NUM = new Set(["Jumlah", "Jumlah partisipan", "Jarak ke satwa (m)", "Azimuth (derajat)", "Jumlah pelaku", "Umur",
     "Jumlah Wisatawan", "Jumlah Perempuan", "Jumlah Laki - Laki", "Jumlah Sampah"]);
+  // Angka yang cukup ditampilkan rentangnya (tidak dijumlah), dan yang ditampilkan rata-ratanya.
+  const NUM_RANGE = new Set(["Umur", "Azimuth (derajat)"]);
+  const NUM_AVG = new Set(["Jarak ke satwa (m)"]);
+  // Kolom berisi nama orang/kelompok: ditampilkan sebagai tabel lengkap, bukan grafik.
+  const PERSON = new Set(["Nama pelaku", "Nama Masyarakat", "Nama pelaku indikatif", "Nama kelompok", "Nama Pewaris"]);
   const SPECIES = new Set(["Jenis satwa", "Jenis tumbuhan"]);
   const TEXT = new Set(["Keterangan", "Nama pelaku", "Nama kelompok", "Nama Masyarakat", "Alamat", "Asal", "Lokasi",
     "Kode Tanda Ternak", "Nama pelaku indikatif", "Vegetasi Terdampak", "Isi media informasi", "No. pal", "Nama Sekolah",
@@ -25,7 +30,11 @@
   const EN = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
   const BULAN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
-  const S = { all: [], rows: [], hasResor: false, demo: false, resor: "", from: "", to: "", source: "" };
+  const S = { all: [], rows: [], hasResor: false, demo: false, resor: "", from: "", to: "", source: "", capaian: [] };
+  const ALIAS = C.ALIAS || {};
+  const alias = (n) => ALIAS[n] || n;
+  const STATUS = window.SMART_STATUS || {};
+  const IUCN = { CR: "Kritis (CR)", EN: "Genting (EN)", VU: "Rentan (VU)", NT: "Hampir terancam (NT)", LC: "Risiko rendah (LC)", DD: "Kurang data (DD)", NE: "Belum dievaluasi (NE)" };
   const charts = [];
   let maps = [];
 
@@ -48,9 +57,11 @@
   }
   function num(s) { const n = parseFloat(String(s).replace(",", ".")); return isFinite(n) ? n : null; }
   function splitSpecies(s) {
-    const p = s.split(" - ").map((x) => x.trim());
+    // Format SMART "Lokal - Indonesia - Ilmiah"; bagian boleh kosong ("Katowi - - Palaquium amboinense").
+    // Dua bagian dibaca sebagai "Indonesia - Ilmiah". Tanda hubung di dalam kata (Kirik-kirik) tidak memisah.
+    const p = s.split(/\s*-\s+/).map((x) => x.trim());
     if (p.length >= 3) return { lokal: p[0], indo: p[1], latin: p.slice(2).join(" - ") };
-    if (p.length === 2) return { lokal: p[0], indo: "", latin: p[1] };
+    if (p.length === 2) return { lokal: "", indo: p[0], latin: p[1] };
     return { lokal: "", indo: s, latin: "" };
   }
   function speciesName(s) { const p = splitSpecies(s); return p.indo || p.lokal || p.latin; }
@@ -72,7 +83,8 @@
   // Kunci pencocokan: huruf kecil tanpa spasi/tanda baca, sehingga "Observation_Category_0", "Azimuth__derajat_"
   // atau "No__pal" (judul kolom yang sudah diubah Google Sheets/SMART) tetap dikenali.
   const hkey = (h) => String(h || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-  const KNOWN = new Map(CORE.concat(...M.map((c) => c.fields.concat(...c.subs.map((s) => s.fields)))).map((h) => [hkey(h), h]));
+  const KNOWN = new Map(CORE.concat(...M.map((c) => c.fields.concat(...c.subs.map((s) => s.fields)))).map((h) => [hkey(h), alias(h)]));
+  for (const c of M) { c.fields = c.fields.map(alias); for (const s of c.subs) { s.name = alias(s.name); s.fields = s.fields.map(alias); } }
   const cleanHead = (h) => String(h || "").replace(/^\uFEFF/, "").replace(/\s+/g, " ").trim();
   function loadCSV(url) {
     return new Promise((res, rej) => Papa.parse(url, {
@@ -95,7 +107,25 @@
       error: rej,
     }));
   }
+  function loadCapaian(item) {
+    if (!item.url) return Promise.resolve({ ...item, data: null });
+    return new Promise((res) => Papa.parse(item.url, {
+      download: true, header: false, skipEmptyLines: "greedy",
+      complete: (r) => {
+        const g = r.data; if (!g.length) return res({ ...item, data: null, err: true });
+        const head = g[0].map(hkey);
+        let yc = head.findIndex((h) => h.includes("tahun")); if (yc < 0) yc = 0;
+        let vc = item.kolom ? head.indexOf(hkey(item.kolom)) : -1;
+        if (vc < 0) vc = head.findIndex((h, i) => i !== yc);
+        const data = {};
+        for (const row of g.slice(1)) { const y = parseInt(row[yc], 10), v = num(row[vc]); if (y && v != null) data[y] = (data[y] || 0) + v; }
+        res({ ...item, data });
+      },
+      error: () => res({ ...item, data: null, err: true }),
+    }));
+  }
   async function load() {
+    S.capaian = await Promise.all((C.CAPAIAN || []).map(loadCapaian));
     if (C.SHEET_CSV_URL) {
       try { const d = await loadCSV(C.SHEET_CSV_URL); S.source = "Google Sheets"; return d; }
       catch (e) { console.warn("Google Sheets tidak terbaca, memakai file cadangan", e); S.sheetError = e; }
@@ -136,7 +166,7 @@
         ym: d ? d.getFullYear() + "-" + pad(d.getMonth() + 1) : "",
         day: d ? d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) : "",
         c0: r["Observation Category 0"].trim(),
-        c1: (r["Observation Category 1"] || "").trim(),
+        c1: alias((r["Observation Category 1"] || "").trim()),
         lon: num(r.X), lat: num(r.Y),
         realResor: rc ? canonResor(r[rc]) : C.RESOR_KOSONG,
         grp: r["Observation Group"] || r["Waypoint ID"] + "|" + r["Waypoint Date"],
@@ -185,13 +215,14 @@
   }
   function chrome() {
     const cat = M.find((c) => c.slug === PAGE);
-    const title = cat ? cat.short : "Dashboard Kawasan";
-    const lede = cat ? cat.desc : "Rekap seluruh observasi SMART Patrol di " + C.NAMA_KAWASAN + ", dari tingkat kawasan hingga per resor.";
+    const title = cat ? cat.short : "Overview Kawasan";
+    const lede = cat ? cat.desc : "Rekap seluruh observasi SMART Patrol di " + C.NAMA_KAWASAN + ".";
     const counts = Object.fromEntries(countBy(S.all, (x) => x.c0));
-    const tabs = [`<a href="index.html"${!cat ? ' aria-current="page"' : ""}>Dashboard Kawasan</a>`]
+    const tabs = [`<a href="index.html"${!cat ? ' aria-current="page"' : ""}>Overview Kawasan</a>`]
       .concat(M.map((c) => `<a href="${c.slug}.html"${cat === c ? ' aria-current="page"' : ""}>${esc(c.short)}<span class="count">${fmt(counts[c.name] || 0)}</span></a>`));
     document.title = title + " · Data SMART Patrol";
     $("#band").innerHTML = `${contours()}<div class="band-inner">
+      ${C.LOGO ? `<img class="logo" src="${esc(C.LOGO)}" alt="" onerror="this.remove()">` : ""}
       <p class="eyebrow">${esc(C.NAMA_KAWASAN)} · Data SMART Patrol</p>
       <h1>${esc(title)}</h1><p class="lede">${esc(lede)}</p>
       <nav class="tabs" aria-label="Halaman">${tabs.join("")}</nav></div>`;
@@ -217,7 +248,7 @@
   function update(rebuildFilters) {
     applyFilter();
     if (rebuildFilters) filterBar();
-    $("#f-meta").textContent = fmt(S.rows.length) + " observasi · sumber: " + S.source;
+    $("#f-meta").textContent = fmt(S.rows.length) + " observasi · " + (C.SUMBER || S.source);
     render();
   }
 
@@ -234,7 +265,10 @@
       const label = opts.label ? opts.label(k) : esc(k);
       return `<div class="hbar" title="${esc(k)}: ${fmt(v)} (${fmt((v / total) * 100, 1)}%)"><div class="lab"><span>${label}</span><div class="track"><b style="width:${(v / max) * 100}%;${opts.color ? "background:" + opts.color(k) : ""}"></b></div></div><span class="val">${fmt(v)}</span></div>`;
     }).join("");
-    if (rest.length) h += `<div class="missing">+ ${rest.length} nilai lain (${fmt(rest.reduce((a, e) => a + e[1], 0))} observasi)</div>`;
+    if (rest.length) {
+      const row = ([k, v]) => `<div class="hbar" title="${esc(k)}: ${fmt(v)}"><div class="lab"><span>${opts.label ? opts.label(k) : esc(k)}</span><div class="track"><b style="width:${(v / max) * 100}%;${opts.color ? "background:" + opts.color(k) : ""}"></b></div></div><span class="val">${fmt(v)}</span></div>`;
+      h += `<details class="more"><summary>Tampilkan ${rest.length} isian lainnya</summary><div class="hbars">${rest.map(row).join("")}</div></details>`;
+    }
     return `<div class="hbars">${h || '<div class="empty">Belum ada data.</div>'}</div>`;
   }
   function legend(items) {
@@ -257,15 +291,6 @@
       },
     }));
   }
-  function singleMonthly(el, months, values, label) {
-    el.innerHTML = `<div class="chart" style="height:260px"><canvas></canvas></div>`;
-    charts.push(new Chart($("canvas", el), {
-      type: "bar",
-      data: { labels: months.map(ymLabel), datasets: [{ label, data: values, backgroundColor: css("--accent"), borderRadius: { topLeft: 4, topRight: 4 }, maxBarThickness: 46 }] },
-      options: { maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } },
-        scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: css("--line") }, border: { display: false } } } },
-    }));
-  }
   function renderMap(el, rows, colorOf, keyOf, keys) {
     const groups = new Map();
     for (const r of rows) {
@@ -280,7 +305,25 @@
     const sat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 18, attribution: "Citra: Esri" });
     const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18, attribution: "© OpenStreetMap" });
     sat.addTo(map);
-    L.control.layers({ "Citra satelit": sat, "Peta jalan": osm }).addTo(map);
+    // Layer GeoJSON tambahan: kosong sampai dicentang, baru dimuat saat itu supaya halaman tetap ringan.
+    const overlays = {};
+    for (const ly of C.LAYER_PETA || []) {
+      const group = L.layerGroup();
+      group.cfg = ly;
+      overlays[ly.label] = group;
+    }
+    map.on("overlayadd", (e) => {
+      const g = e.layer; if (!g.cfg || g.loaded) return;
+      g.loaded = true;
+      const st = { color: g.cfg.warna, weight: g.cfg.tebal || 1.5, fill: false, dashArray: g.cfg.putus ? "6 4" : null };
+      fetch(g.cfg.file).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then((gj) => L.geoJSON(gj, {
+          style: () => st,
+          onEachFeature: (f, l) => { const p = f.properties || {}; const keys = Object.keys(p).slice(0, 4); if (keys.length) l.bindTooltip(keys.map((k) => esc(k) + ": " + esc(p[k])).join("<br>"), { sticky: true }); },
+        }).addTo(g))
+        .catch(() => { g.loaded = false; L.popup().setLatLng(map.getCenter()).setContent("File " + esc(g.cfg.file) + " belum ada di repositori.").openOn(map); });
+    });
+    L.control.layers({ "Citra satelit": sat, "Peta jalan": osm }, overlays).addTo(map);
     const b = [];
     for (const g of groups.values()) {
       const f = g[0];
@@ -327,8 +370,8 @@
 
   function resorTable(rows, keys, keyOf, label) {
     const tot = (fn) => rows.filter(fn).length;
-    const head = `<tr><th>Wilayah / resor</th>${keys.map((k) => `<th class="num">${esc(k)}</th>`).join("")}<th class="num">Total</th><th class="num">Hari patroli</th></tr>`;
-    const line = (name, rr, cls, key) => `<tr class="click ${cls}" data-resor="${esc(key)}" tabindex="0" title="Klik untuk menampilkan ${esc(name)} saja"><td>${esc(name)}</td>${keys.map((k) => `<td class="num">${fmt(rr.filter((x) => keyOf(x) === k).length) || "–"}</td>`).join("")}<td class="num"><b>${fmt(rr.length)}</b></td><td class="num">${fmt(uniq(rr.map((x) => x.day))) || "–"}</td></tr>`;
+    const head = `<tr><th>Wilayah / resor</th>${keys.map((k) => `<th class="num">${esc(k)}</th>`).join("")}<th class="num">Total</th></tr>`;
+    const line = (name, rr, cls, key) => `<tr class="click ${cls}" data-resor="${esc(key)}" tabindex="0" title="Klik untuk menampilkan ${esc(name)} saja"><td>${esc(name)}</td>${keys.map((k) => `<td class="num">${fmt(rr.filter((x) => keyOf(x) === k).length) || "–"}</td>`).join("")}<td class="num"><b>${fmt(rr.length)}</b></td></tr>`;
     const groups = resorGroups();
     const known = new Set(groups.flatMap((g) => g.resor));
     let body = "";
@@ -339,7 +382,7 @@
       for (const rs of g.resor) if (!S.resor || S.resor === rs || S.resor === "sptn:" + g.sptn) body += line("\u2003" + rs, rows.filter((x) => resorOf(x) === rs), "", rs);
     }
     for (const [rs] of countBy(rows.filter((x) => !known.has(resorOf(x))), resorOf)) body += line(rs, rows.filter((x) => resorOf(x) === rs), "", rs);
-    const foot = `<tr><td>${esc(label)}</td>${keys.map((k) => `<td class="num">${fmt(tot((x) => keyOf(x) === k))}</td>`).join("")}<td class="num">${fmt(rows.length)}</td><td class="num">${fmt(uniq(rows.map((x) => x.day)))}</td></tr>`;
+    const foot = `<tr><td>${esc(label)}</td>${keys.map((k) => `<td class="num">${fmt(tot((x) => keyOf(x) === k))}</td>`).join("")}<td class="num">${fmt(rows.length)}</td></tr>`;
     return `<div class="table-wrap"><table><thead>${head}</thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table></div>`;
   }
   function wireResorRows(root) {
@@ -354,24 +397,67 @@
     return `<div class="notice"><strong>Kolom resor belum ada.</strong> Setelah kolom <b>Resor</b> ditambahkan di spreadsheet, tabel ini otomatis terbagi ke SPTN Wilayah I Kore (Piong, Oi Katupa, Kawinda Toi) dan SPTN Wilayah II Pekat (Doroncanga, Doropeti, Pancasila) dan pilihan resor di atas bisa dipakai untuk menyaring seluruh halaman. Tekan “Lihat contoh pembagian resor” untuk melihat gambarannya.</div>`;
   }
 
+  // Aktivitas Manusia: yang diperhatikan hanya status pelanggaran / bukan pelanggaran (tindak lanjut tidak direkap).
+  // Kategori lain: perlu tindak lanjut atau kondisi rusak.
+  const isAM = (x) => x.c0 === "Aktivitas Manusia";
+  const tindakLanjut = (x) => !isAM(x) && val(x, "Perlu tindak lanjut") === "Ya";
   function flagRows(rows) {
-    return rows.filter((x) => val(x, "Pelanggaran") === "Ya" || val(x, "Perlu tindak lanjut") === "Ya" || BAD_KONDISI.test(val(x, "Kondisi")));
+    return rows.filter((x) => (isAM(x) ? !!val(x, "Pelanggaran") : tindakLanjut(x) || BAD_KONDISI.test(val(x, "Kondisi"))));
   }
   function flagPills(x) {
     const p = [];
-    if (val(x, "Pelanggaran") === "Ya") p.push('<span class="pill crit">Pelanggaran</span>');
-    if (val(x, "Perlu tindak lanjut") === "Ya") p.push('<span class="pill warn">Perlu tindak lanjut</span>');
+    if (isAM(x)) p.push(val(x, "Pelanggaran") === "Ya" ? '<span class="pill crit">Pelanggaran</span>' : '<span class="pill">Bukan pelanggaran</span>');
+    if (tindakLanjut(x)) p.push('<span class="pill warn">Perlu tindak lanjut</span>');
     if (BAD_KONDISI.test(val(x, "Kondisi"))) p.push(`<span class="pill warn">${esc(val(x, "Kondisi"))}</span>`);
     return p.join(" ");
   }
 
   /* ---------------- halaman kawasan ---------------- */
+  function periodLabel() {
+    return S.from && S.to ? (S.from === S.to ? ymLabel(S.from) : ymLabel(S.from) + " – " + ymLabel(S.to)) : "";
+  }
+  function capaianKpis() {
+    const y0 = +S.from.slice(0, 4), y1 = +S.to.slice(0, 4);
+    return S.capaian.map((c) => {
+      if (!c.url) return { v: "–", l: c.label, n: "Tautan belum diatur di config.js" };
+      if (!c.data) return { v: "–", l: c.label, n: "Sheet capaian tidak terbaca" };
+      const ys = Object.keys(c.data).map(Number).filter((y) => y >= y0 && y <= y1);
+      if (!ys.length) return { v: "–", l: c.label, n: "Belum ada data tahun " + (y0 === y1 ? y0 : y0 + "–" + y1) };
+      return { v: fmt(ys.reduce((a, y) => a + c.data[y], 0)), l: c.label, n: "Tahun " + ys.sort().join(", ") + " · tingkat kawasan" };
+    });
+  }
+  // Ringkasan yang paling relevan untuk tiap kategori 0 di kartu Overview.
+  function cardInfo(c, rr) {
+    if (!rr.length) return "Belum ada observasi";
+    const top = (fn, pre) => { const t = countBy(rr, fn)[0]; return t ? pre + ": " + esc(t[0]) + " (" + fmt(t[1]) + ")" : ""; };
+    const spTop = (f, pre) => top((x) => { const v = val(x, f); return v && !NO_SPECIES.test(v) ? speciesName(v) : ""; }, pre);
+    switch (c.name) {
+      case "Aktivitas Manusia": {
+        const ya = rr.filter((x) => val(x, "Pelanggaran") === "Ya").length;
+        const bukan = rr.filter((x) => /^bukan/i.test(val(x, "Pelanggaran"))).length;
+        return `Pelanggaran: <b class="crit-t">${fmt(ya)}</b> · Bukan pelanggaran: <b>${fmt(bukan)}</b>`;
+      }
+      case "Satwa Liar": return spTop("Jenis satwa", "Paling sering ditemukan");
+      case "Tumbuhan": return spTop("Jenis tumbuhan", "Paling sering ditemukan");
+      case "Spesies invasif": return spTop("Jenis tumbuhan", "Paling sering ditemukan");
+      case "Fitur": return top((x) => x.c1, "Paling sering dijumpai");
+      case "Ground Check": {
+        const eko = top((x) => (x.c1 === "Tipe Ekosistem" ? val(x, "Klasifikasi 4") : ""), "Ekosistem dominan");
+        const tut = top((x) => (x.c1 === "Tutupan Lahan" ? val(x, "Klasifikasi 02") : ""), "Tutupan lahan dominan");
+        return [eko, tut].filter(Boolean).join("<br>");
+      }
+      case "Penyuluhan dan Pemberdayaan Masyarakat": return top((x) => x.c1, "Kegiatan tersering");
+      case "Pengelolaan": return top((x) => val(x, "Jenis kegiatan") || x.c1, "Kegiatan tersering");
+      case "Penjagaan Jalur Pendakian dan ODTWA": return top((x) => val(x, "Jenis Kegiatan Wisata") || x.c1, "Kegiatan tersering");
+      default: return top((x) => x.c1 || val(x, "Tipe temuan"), "Tersering");
+    }
+  }
   function renderKawasan() {
     const rows = S.rows;
-    const months = monthRange(rows);
     const sp = (f) => uniq(rows.map((x) => val(x, f)).filter((v) => v && !NO_SPECIES.test(v)));
-    const pel = rows.filter((x) => val(x, "Pelanggaran") === "Ya").length;
-    const tl = rows.filter((x) => val(x, "Perlu tindak lanjut") === "Ya").length;
+    const am = rows.filter(isAM);
+    const pel = am.filter((x) => val(x, "Pelanggaran") === "Ya").length;
+    const tl = rows.filter(tindakLanjut).length;
     const scope = scopeLabel();
     const c0counts = Object.fromEntries(countBy(rows, (x) => x.c0));
     const maxC = Math.max(1, ...Object.values(c0counts));
@@ -382,32 +468,27 @@
 
     $("#content").innerHTML = `
       ${kpis([
-        { v: fmt(rows.length), l: "Observasi tercatat", n: scope },
+        { v: fmt(rows.length), l: "Observasi tercatat", n: scope + " · " + periodLabel() },
         { v: fmt(uniq(rows.map((x) => x.grp))), l: "Titik temuan (waypoint)" },
-        { v: fmt(uniq(rows.map((x) => x.day))), l: "Hari patroli", n: months.length ? ymLabel(months[0]) + " – " + ymLabel(months[months.length - 1]) : "" },
+        ...capaianKpis(),
         { v: fmt(sp("Jenis satwa")), l: "Jenis satwa tercatat" },
         { v: fmt(sp("Jenis tumbuhan")), l: "Jenis tumbuhan tercatat" },
-        { v: fmt(pel), l: "Temuan pelanggaran", tone: pel ? "crit" : "" },
-        { v: fmt(tl), l: "Perlu tindak lanjut", tone: tl ? "warn" : "" },
+        { v: fmt(pel), l: "Temuan pelanggaran", tone: pel ? "crit" : "", n: "Aktivitas Manusia" },
+        { v: fmt(tl), l: "Perlu tindak lanjut", tone: tl ? "warn" : "", n: "Selain Aktivitas Manusia" },
       ])}
       <section class="panel"><h2>Kategori temuan</h2><p class="sub">Jumlah observasi per kategori 0 pada ${esc(scope)}. Klik kartu untuk membuka rekap rinci kategori tersebut.</p>
         <div class="cats">${M.map((c) => {
-          const n = c0counts[c.name] || 0;
-          const top = countBy(rows.filter((x) => x.c0 === c.name), (x) => x.c1 || val(x, "Tipe temuan"))[0];
-          return `<a class="cat" href="${c.slug}.html"><span class="t">${esc(c.short)}</span><span class="v">${fmt(n)}</span><span class="bar"><b style="width:${(n / maxC) * 100}%"></b></span><span class="d">${top ? "Terbanyak: " + esc(top[0]) + " (" + fmt(top[1]) + ")" : "Belum ada observasi"}</span></a>`;
+          const rr = rows.filter((x) => x.c0 === c.name);
+          return `<a class="cat" href="${c.slug}.html"><span class="t">${esc(c.short)}</span><span class="v">${fmt(rr.length)}</span><span class="bar"><b style="width:${(rr.length / maxC) * 100}%"></b></span><span class="d">${cardInfo(c, rr)}</span></a>`;
         }).join("")}</div></section>
-      <div class="grid-2">
-        <section class="panel"><h2>Observasi per bulan</h2><p class="sub">Disusun menurut kategori 0.</p><div id="ch-trend"></div></section>
-        <section class="panel"><h2>Hari patroli per bulan</h2><p class="sub">Jumlah tanggal berbeda yang memiliki minimal satu observasi.</p><div id="ch-days"></div></section>
-      </div>
+      <section class="panel"><h2>Observasi per bulan</h2><p class="sub">Disusun menurut kategori 0.</p><div id="ch-trend"></div></section>
       <section class="panel" id="resor"><h2>Rekap per resor</h2><p class="sub">Klik baris resor untuk mengerucutkan seluruh dashboard ke resor tersebut. Pilih “Seluruh kawasan” di atas untuk kembali ke tingkat kawasan.</p>
         ${resorNotice()}<div style="height:12px"></div>${resorTable(rows, keysC0.map((k) => (k === OTHER ? OTHER : M.find((m) => m.name === k)?.short || k)), (x) => { const k = keyC0(x); return k === OTHER ? OTHER : M.find((m) => m.name === k)?.short || k; }, "Total " + scope)}
         <div id="ch-resor" style="margin-top:18px"></div></section>
-      <section class="panel"><h2>Peta sebaran temuan</h2><p class="sub">Setiap titik adalah satu waypoint; klik titik untuk melihat isinya.</p><div id="map-all"></div></section>
-      <section class="panel"><h2>Perlu perhatian</h2><p class="sub">Temuan dengan pelanggaran, perlu tindak lanjut, atau kondisi rusak/roboh.</p><div id="t-flag"></div></section>`;
+      <section class="panel"><h2>Peta sebaran temuan</h2><p class="sub">Setiap titik adalah satu waypoint; klik titik untuk melihat isinya. Layer batas kawasan, resor, grid, dan jalur bisa dinyalakan dari tombol layer di pojok kanan atas peta.</p><div id="map-all"></div></section>
+      <section class="panel"><h2>Perlu perhatian</h2><p class="sub">Aktivitas Manusia menurut status pelanggaran; kategori lain yang perlu tindak lanjut atau kondisinya rusak/roboh.</p><div id="t-flag"></div></section>`;
 
     stackedMonthly($("#ch-trend"), rows, keyC0, keysC0, colC0);
-    singleMonthly($("#ch-days"), months, months.map((m) => uniq(rows.filter((x) => x.ym === m).map((x) => x.day))), "Hari patroli");
     const order = resorGroups().flatMap((g) => g.resor);
     const rs = order.map((r) => [r, rows.filter((x) => resorOf(x) === r).length]).filter((e) => !S.resor || e[1]);
     const rsColor = (r) => { const i = order.indexOf(r); return i >= 0 ? sc(i + 1) : css("--faint"); };
@@ -427,8 +508,14 @@
   }
 
   /* ---------------- halaman kategori ---------------- */
+  const latinOf = (s) => splitSpecies(s).latin.replace(/\s+/g, " ").trim();
+  const statusOf = (s) => STATUS[latinOf(s)] || STATUS[latinOf(s).split(" ").slice(0, 2).join(" ")] || null;
+  const lindungLabel = (st) => (!st ? "Belum dicek" : st.dilindungi ? "Dilindungi" : "Tidak dilindungi");
+  const iucnLabel = (st) => (!st || !st.iucn ? "Belum dicek" : IUCN[st.iucn] || st.iucn);
+
   function renderKategori(cat) {
     const all = S.rows.filter((x) => x.c0 === cat.name);
+    const am = cat.name === "Aktivitas Manusia";
     const hasSubs = cat.subs.length > 0;
     const groupField = hasSubs ? null : "Tipe temuan";
     const keyOf = (x) => (hasSubs ? x.c1 || "(tanpa sub-kategori)" : val(x, groupField) || "(kosong)");
@@ -437,24 +524,45 @@
     const colorOf = (k) => { const i = keys.indexOf(k); return i >= 0 && i < 7 ? sc(i + 1) : css("--faint"); };
     const fieldsAll = [...new Set(cat.fields.concat(...cat.subs.map((s) => s.fields)))];
     const present = new Set(Object.keys(S.all[0]?.r || {}));
-    const months = monthRange(all);
+    const spFields = fieldsAll.filter((f) => SPECIES.has(f) && all.some((x) => val(x, f)));
+    const spCount = (f) => uniq(all.map((x) => val(x, f)).filter((v) => v && !NO_SPECIES.test(v)));
 
     const kp = [
-      { v: fmt(all.length), l: "Observasi", n: scopeLabel() },
+      { v: fmt(all.length), l: "Observasi", n: scopeLabel() + " · " + periodLabel() },
       { v: fmt(uniq(all.map((x) => x.grp))), l: "Titik temuan (waypoint)" },
-      { v: fmt(uniq(all.map((x) => x.day))), l: "Hari patroli dengan temuan", n: months.length ? ymLabel(months[0]) + " – " + ymLabel(months[months.length - 1]) : "" },
     ];
     if (hasSubs) kp.push({ v: uniq(all.map((x) => x.c1).filter(Boolean)) + " / " + cat.subs.length, l: "Sub-kategori tercatat", n: "dari data model" });
-    for (const f of fieldsAll) if (SPECIES.has(f)) kp.push({ v: fmt(uniq(all.map((x) => val(x, f)).filter((v) => v && !NO_SPECIES.test(v)))), l: f + " berbeda" });
-    if (fieldsAll.includes("Status") && all.some((x) => val(x, "Status") === "Dilindungi")) kp.push({ v: fmt(all.filter((x) => val(x, "Status") === "Dilindungi").length), l: "Perjumpaan satwa dilindungi" });
+    for (const f of fieldsAll.filter((f) => SPECIES.has(f))) {
+      const what = f === "Jenis satwa" ? "Jenis satwa" : "Jenis tumbuhan";
+      if (am || all.some((x) => val(x, f))) kp.push({ v: fmt(spCount(f)), l: what + (am ? " terdampak" : " tercatat") });
+    }
+    if (cat.name === "Satwa Liar") {
+      const prot = all.filter((x) => statusOf(val(x, "Jenis satwa"))?.dilindungi);
+      kp.push({ v: fmt(uniq(prot.map((x) => val(x, "Jenis satwa")))), l: "Jenis satwa dilindungi", n: fmt(prot.length) + " perjumpaan · P.106/2018" });
+      const thr = all.filter((x) => ["CR", "EN", "VU"].includes(statusOf(val(x, "Jenis satwa"))?.iucn));
+      kp.push({ v: fmt(uniq(thr.map((x) => val(x, "Jenis satwa")))), l: "Jenis terancam IUCN", n: "CR, EN, VU", tone: thr.length ? "warn" : "" });
+    }
     if (fieldsAll.includes("Kondisi tumbuhan")) { const n = all.filter((x) => /mati|sakit|tumbang/i.test(val(x, "Kondisi tumbuhan"))).length; kp.push({ v: fmt(n), l: "Tumbuhan sakit/mati/tumbang", tone: n ? "warn" : "" }); }
-    if (fieldsAll.includes("Pelanggaran")) { const n = all.filter((x) => val(x, "Pelanggaran") === "Ya").length; kp.push({ v: fmt(n), l: "Pelanggaran", tone: n ? "crit" : "" }); }
+    if (fieldsAll.includes("Pelanggaran")) {
+      const n = all.filter((x) => val(x, "Pelanggaran") === "Ya").length;
+      kp.push({ v: fmt(n), l: "Pelanggaran", tone: n ? "crit" : "" });
+      kp.push({ v: fmt(all.filter((x) => /^bukan/i.test(val(x, "Pelanggaran"))).length), l: "Bukan pelanggaran" });
+    }
     if (fieldsAll.includes("Kondisi")) { const n = all.filter((x) => BAD_KONDISI.test(val(x, "Kondisi"))).length; kp.push({ v: fmt(n), l: "Kondisi rusak/roboh", tone: n ? "warn" : "" }); }
-    if (fieldsAll.includes("Perlu tindak lanjut")) { const n = all.filter((x) => val(x, "Perlu tindak lanjut") === "Ya").length; kp.push({ v: fmt(n), l: "Perlu tindak lanjut", tone: n ? "warn" : "" }); }
+    if (!am && fieldsAll.includes("Perlu tindak lanjut")) { const n = all.filter((x) => val(x, "Perlu tindak lanjut") === "Ya").length; kp.push({ v: fmt(n), l: "Perlu tindak lanjut", tone: n ? "warn" : "" }); }
 
     const comp = countBy(all, keyOf);
     const compAll = hasSubs ? keys.map((k) => [k, all.filter((x) => x.c1 === k).length]).sort((a, b) => b[1] - a[1]) : comp;
-    const speciesField = fieldsAll.find((f) => SPECIES.has(f) && all.some((x) => val(x, f)));
+    const unlisted = cat.name === "Tumbuhan" && all.some((x) => NO_SPECIES.test(val(x, "Jenis tumbuhan")));
+
+    let speciesHtml = "";
+    if (am) {
+      speciesHtml = `<section class="panel"><h2>Spesies Terdampak Aktivitas Manusia</h2><p class="sub">Jenis tumbuhan dan satwa yang tercatat pada temuan Aktivitas Manusia.</p>
+        <div class="grid-2"><div><h3>Jenis tumbuhan terdampak</h3><div id="t-sp-tumbuhan"></div></div><div><h3>Jenis satwa terdampak</h3><div id="t-sp-satwa"></div></div></div></section>`;
+    } else if (spFields.length) {
+      speciesHtml = spFields.map((f) => `<section class="panel"><h2>Daftar ${f.toLowerCase()}</h2><p class="sub">Diurutkan dari yang paling sering dijumpai. Nama mengikuti daftar SMART: lokal, Indonesia, ilmiah.${f === "Jenis satwa" ? " Status perlindungan menurut Permen LHK P.106/2018; status IUCN menurut Daftar Merah IUCN." : ""}</p><div id="t-sp-${f === "Jenis satwa" ? "satwa" : "tumbuhan"}"></div></section>`).join("");
+    }
+    if (unlisted) speciesHtml += `<section class="panel"><h2>Daftar Jenis Yang Belum Masuk Daftar</h2><p class="sub">Observasi dengan Jenis tumbuhan “Belum Ada di List”, dikelompokkan menurut nama yang ditulis di kolom Keterangan.</p><div id="t-unlisted"></div></section>`;
 
     $("#content").innerHTML = `
       ${kpis(kp)}
@@ -464,8 +572,8 @@
           ${hbars(compAll, { color: colorOf })}</section>
         <section class="panel"><h2>Observasi per bulan</h2><p class="sub">Disusun menurut ${hasSubs ? "sub-kategori" : "tipe temuan"}.</p><div id="ch-trend"></div></section>
       </div>
-      ${speciesField ? `<section class="panel"><h2>Daftar ${speciesField.toLowerCase()}</h2><p class="sub">Diurutkan dari yang paling sering dijumpai. Nama mengikuti daftar SMART: lokal, Indonesia, ilmiah.</p><div id="t-species"></div></section>` : ""}
-      <section class="panel"><h2>Rincian isian data model</h2><p class="sub">Ringkasan setiap atribut yang diisi di SMART untuk ${hasSubs ? "tiap sub-kategori" : "kategori ini"}.</p><div id="attrs"></div></section>
+      ${speciesHtml}
+      <section class="panel"><h2>Rincian Temuan ${esc(cat.short)}${hasSubs ? " Kategori 1" : ""}</h2><p class="sub">Ringkasan setiap isian SMART ${hasSubs ? "untuk tiap kategori 1" : "pada kategori ini"}.</p><div id="attrs"></div></section>
       <section class="panel"><h2>Peta sebaran</h2><p class="sub">Warna titik mengikuti ${hasSubs ? "sub-kategori" : "tipe temuan"}; klik titik untuk melihat isinya.</p><div id="map-cat"></div></section>
       <section class="panel" id="resor"><h2>Rekap per resor</h2><p class="sub">Klik baris resor untuk menyaring halaman ini.</p>${resorNotice()}<div style="height:12px"></div>
         ${resorTable(all, keys.filter((k) => all.some((x) => keyOf(x) === k)), keyOf, "Total")}</section>
@@ -473,7 +581,9 @@
 
     const trendKeys = keys.filter((k) => all.some((x) => keyOf(x) === k));
     stackedMonthly($("#ch-trend"), all, keyOf, trendKeys, colorOf);
-    if (speciesField) speciesTable($("#t-species"), all, speciesField);
+    if ($("#t-sp-satwa")) speciesTable($("#t-sp-satwa"), all, "Jenis satwa", am);
+    if ($("#t-sp-tumbuhan")) speciesTable($("#t-sp-tumbuhan"), all, "Jenis tumbuhan", am);
+    if (unlisted) unlistedTable($("#t-unlisted"), all.filter((x) => NO_SPECIES.test(val(x, "Jenis tumbuhan"))));
     attrPanels($("#attrs"), cat, all, present);
     renderMap($("#map-cat"), all, colorOf, keyOf, trendKeys);
     wireResorRows($("#resor"));
@@ -489,27 +599,48 @@
     ]);
   }
 
-  function speciesTable(el, rows, field) {
+  function speciesTable(el, rows, field, compact) {
     const m = new Map();
     for (const x of rows) {
       const s = val(x, field); if (!s) continue;
-      if (!m.has(s)) m.set(s, { n: 0, ind: 0, hasInd: false, extra: new Map(), days: new Set() });
-      const o = m.get(s); o.n++; o.days.add(x.day);
+      if (!m.has(s)) m.set(s, { n: 0, ind: 0, hasInd: false, kondisi: new Map() });
+      const o = m.get(s); o.n++;
       const j = num(val(x, "Jumlah")); if (j != null && /ekor|individu|^$/i.test(val(x, "Satuan"))) { o.ind += j; o.hasInd = true; }
-      const e = val(x, "Status") || val(x, "Kondisi tumbuhan"); if (e) o.extra.set(e, (o.extra.get(e) || 0) + 1);
+      const k = val(x, "Kondisi tumbuhan"); if (k) o.kondisi.set(k, (o.kondisi.get(k) || 0) + 1);
     }
     const list = [...m.entries()].sort((a, b) => b[1].n - a[1].n);
+    if (!list.length) { el.innerHTML = '<div class="empty">Tidak ada jenis yang tercatat.</div>'; return; }
     const anyInd = list.some(([, o]) => o.hasInd);
-    const extraName = field === "Jenis satwa" ? "Status" : "Kondisi";
+    const satwa = field === "Jenis satwa";
+    const pill = (v, cls) => `<span class="pill ${cls}">${esc(v)}</span>`;
     detailTable(el, list, [
       { h: "#", f: (e) => String(list.indexOf(e) + 1), num: true },
       { h: "Nama Indonesia", f: (e) => (NO_SPECIES.test(e[0]) ? "Belum ada di daftar" : splitSpecies(e[0]).indo) },
-      { h: "Nama lokal", f: (e) => splitSpecies(e[0]).lokal },
+      ...(compact ? [] : [{ h: "Nama lokal", f: (e) => splitSpecies(e[0]).lokal }]),
       { h: "Nama ilmiah", f: (e) => splitSpecies(e[0]).latin, html: (v) => `<span class="latin">${esc(v)}</span>` },
       { h: "Observasi", f: (e) => fmt(e[1].n), num: true },
-      ...(anyInd ? [{ h: "Individu", f: (e) => (e[1].hasInd ? fmt(e[1].ind) : "–"), num: true }] : []),
-      { h: "Hari dijumpai", f: (e) => fmt(e[1].days.size), num: true },
-      { h: extraName, f: (e) => [...e[1].extra.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => k + " " + v).join(", ") },
+      ...(anyInd && !compact ? [{ h: "Individu", f: (e) => (e[1].hasInd ? fmt(e[1].ind) : "–"), num: true }] : []),
+      ...(satwa && !compact ? [
+        { h: "Perlindungan", f: (e) => (NO_SPECIES.test(e[0]) || !splitSpecies(e[0]).latin ? "" : lindungLabel(statusOf(e[0]))), html: (v) => (v ? pill(v, v === "Dilindungi" ? "crit" : v === "Belum dicek" ? "warn" : "") : "") },
+        { h: "IUCN", f: (e) => (NO_SPECIES.test(e[0]) || !splitSpecies(e[0]).latin ? "" : iucnLabel(statusOf(e[0]))), html: (v) => (v ? pill(v, /CR|EN|VU/.test(v) ? "crit" : /NT/.test(v) ? "warn" : v === "Belum dicek" ? "warn" : "") : "") },
+      ] : []),
+      ...(!satwa && !compact ? [{ h: "Kondisi", f: (e) => [...e[1].kondisi.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => k + " " + v).join(", ") }] : []),
+    ]);
+  }
+
+  function unlistedTable(el, rows) {
+    const m = new Map();
+    for (const x of rows) {
+      const k = val(x, "Keterangan") || "(keterangan kosong)";
+      if (!m.has(k)) m.set(k, { n: 0, last: null, resor: new Set() });
+      const o = m.get(k); o.n++; o.resor.add(resorOf(x)); if (!o.last || (x.d && x.d > o.last)) o.last = x.d;
+    }
+    const list = [...m.entries()].sort((a, b) => b[1].n - a[1].n);
+    detailTable(el, list, [
+      { h: "Nama / keterangan yang ditulis", f: (e) => e[0] },
+      { h: "Observasi", f: (e) => fmt(e[1].n), num: true },
+      { h: "Terakhir dijumpai", f: (e) => dLabel(e[1].last) },
+      { h: "Resor", f: (e) => [...e[1].resor].join(", ") },
     ]);
   }
 
@@ -519,36 +650,77 @@
     const empty = groups.filter((g) => !g.rows.length).map((g) => g.name).filter(Boolean);
     let h = withData.map((g) => {
       const head = g.name ? `<div class="subhead"><h3>${esc(g.name)}</h3><span class="missing">${fmt(g.rows.length)} observasi · ${fmt(uniq(g.rows.map((x) => x.grp)))} titik</span></div>` : "";
-      const cells = g.fields.filter((f) => f !== "Satuan").map((f) => attrCell(f, g.rows, present, g.fields.includes("Satuan"))).join("");
-      return head + `<div class="attrs" style="margin-top:12px">${cells}</div>`;
+      const cells = g.fields.filter((f) => f !== "Satuan").map((f) => attrCell(f, g.rows, present, g.fields.includes("Satuan"), g.name)).join("");
+      return `<div class="subblock">${head}<div class="attrs">${cells}</div></div>`;
     }).join("");
-    if (empty.length) h += `<div class="subhead"><h3>Belum tercatat</h3><span class="missing">${empty.map(esc).join(" · ")}</span></div>`;
-    el.innerHTML = h || '<div class="empty">Belum ada data.</div>';
+    if (empty.length) h += `<div class="subblock empty-subs"><h3>Belum tercatat</h3><span class="missing">${empty.map(esc).join(" · ")}</span></div>`;
+    el.innerHTML = `<div class="subblocks">${h || '<div class="empty">Belum ada data.</div>'}</div>`;
+    el.querySelectorAll("[data-person]").forEach((box) => {
+      const g = withData.find((x) => x.name === (box.dataset.sub || null)) || withData[0];
+      personTable(box, g.rows, box.dataset.person);
+    });
   }
-  function attrCell(f, rows, present, hasSatuan) {
+  function personTable(el, rows, f) {
+    const m = new Map();
+    for (const x of rows) {
+      const k = val(x, f); if (!k) continue;
+      if (!m.has(k)) m.set(k, { n: 0, last: null, resor: new Set(), ket: new Set() });
+      const o = m.get(k); o.n++; o.resor.add(resorOf(x)); if (!o.last || (x.d && x.d > o.last)) o.last = x.d;
+      const kt = val(x, "Keterangan") || val(x, "Tipe temuan"); if (kt) o.ket.add(kt);
+    }
+    const list = [...m.entries()].sort((a, b) => b[1].n - a[1].n);
+    detailTable(el, list, [
+      { h: f, f: (e) => e[0] },
+      { h: "Catatan", f: (e) => fmt(e[1].n), num: true },
+      { h: "Terakhir", f: (e) => dLabel(e[1].last) },
+      { h: "Resor", f: (e) => [...e[1].resor].join(", ") },
+      { h: "Keterangan", f: (e) => [...e[1].ket].slice(0, 3).join("; ") },
+    ]);
+  }
+  function attrCell(f, rows, present, hasSatuan, sub) {
     if (rows[0] && isHidden(rows[0].c0, f)) return `<div class="attr"><h4>${esc(f)}</h4><div class="missing">Disembunyikan untuk menjaga privasi.</div></div>`;
+    // Kolom Status satwa dari SMART tidak dipakai; diganti status resmi dari status-spesies.js.
+    if (f === "Status" && rows[0]?.c0 === "Satwa Liar") {
+      const sp = rows.map((x) => val(x, "Jenis satwa")).filter((v) => v && !NO_SPECIES.test(v) && splitSpecies(v).latin);
+      return `<div class="attr"><h4>Status perlindungan <span class="n">· P.106/2018 · ${fmt(sp.length)} perjumpaan</span></h4>${hbars(countBy(sp, (s) => lindungLabel(statusOf(s))))}</div>
+        <div class="attr"><h4>Status IUCN <span class="n">· Daftar Merah IUCN</span></h4>${hbars(countBy(sp, (s) => iucnLabel(statusOf(s))))}</div>`;
+    }
     if (!present.has(f)) return `<div class="attr"><h4>${esc(f)}</h4><div class="missing">Kolom ini belum ada di ekspor CSV.</div></div>`;
     const vals = rows.map((x) => val(x, f)).filter(Boolean);
     const n = `<span class="n"> · ${fmt(vals.length)} dari ${fmt(rows.length)} terisi</span>`;
     if (!vals.length) return `<div class="attr"><h4>${esc(f)}${n}</h4><div class="missing">Belum pernah diisi.</div></div>`;
+    if (PERSON.has(f)) return `<div class="attr wide"><h4>${esc(f)}${n}</h4><div data-person="${esc(f)}" data-sub="${esc(sub || "")}"></div></div>`;
     if (NUM.has(f)) {
       const parts = [];
       const by = new Map();
-      for (const x of rows) { const v = num(val(x, f)); if (v == null) continue; const u = hasSatuan && f === "Jumlah" ? val(x, "Satuan") || "tanpa satuan" : ""; if (!by.has(u)) by.set(u, []); by.get(u).push(v); }
-      for (const [u, arr] of by) {
-        const sum = arr.reduce((a, b) => a + b, 0);
-        const sumTxt = /azimuth/i.test(f) ? "" : `Total <b>${fmt(sum, 2)}${u ? " " + esc(u) : ""}</b> · `;
-        parts.push(`<div class="stat-line"><span>${sumTxt}rata-rata <b>${fmt(sum / arr.length, 1)}</b> · rentang <b>${fmt(Math.min(...arr), 2)}–${fmt(Math.max(...arr), 2)}</b>${u ? " (" + fmt(arr.length) + " isian)" : ""}</span></div>`);
+      const hektarOnly = f === "Jumlah" && (C.JUMLAH_HEKTAR_SAJA || []).includes(sub);
+      for (const x of rows) {
+        const v = num(val(x, f)); if (v == null) continue;
+        const u = hasSatuan && f === "Jumlah" ? val(x, "Satuan") || "tanpa satuan" : "";
+        if (hektarOnly && !/hektar|ha\b/i.test(u)) continue;
+        if (!by.has(u)) by.set(u, []); by.get(u).push(v);
       }
-      return `<div class="attr"><h4>${esc(f)}${n}</h4>${parts.join("")}</div>`;
+      if (!by.size) return `<div class="attr"><h4>${esc(f)}${hektarOnly ? " (hektar)" : ""}</h4><div class="missing">Belum ada isian${hektarOnly ? " dengan satuan hektar" : ""}.</div></div>`;
+      for (const [u, arr] of by) {
+        const sum = arr.reduce((a, b) => a + b, 0), lo = Math.min(...arr), hi = Math.max(...arr);
+        const range = `rentang <b>${fmt(lo, 2)}${lo === hi ? "" : "–" + fmt(hi, 2)}</b>`;
+        let line;
+        if (NUM_RANGE.has(f)) line = range;
+        else if (NUM_AVG.has(f)) line = `rata-rata <b>${fmt(sum / arr.length, 1)}</b> · ${range}`;
+        else line = `Total <b>${fmt(sum, 2)}${u ? " " + esc(u) : ""}</b> · ${range}`;
+        parts.push(`<div class="stat-line"><span>${line}${u ? " (" + fmt(arr.length) + " isian)" : ""}</span></div>`);
+      }
+      return `<div class="attr"><h4>${esc(f)}${hektarOnly ? " (hektar)" : ""}${n}</h4>${parts.join("")}</div>`;
     }
     if (TEXT.has(f)) {
-      const top = countBy(rows, (x) => val(x, f)).slice(0, 4);
-      return `<div class="attr"><h4>${esc(f)}${n}</h4><div class="missing" style="margin-bottom:4px">Isian teks bebas; contoh terbanyak:</div>${hbars(top, { label: (k) => esc(k.length > 70 ? k.slice(0, 70) + "…" : k) })}</div>`;
+      const all = countBy(rows, (x) => val(x, f));
+      // Nomor pal dan kode ternak selalu ditampilkan semua; teks lain 10 teratas lalu sisanya bisa dibuka.
+      const lim = /^(No\. pal|Kode Tanda Ternak)$/.test(f) ? all.length : 10;
+      return `<div class="attr"><h4>${esc(f)}${n}</h4>${hbars(all, { limit: lim, label: (k) => esc(k.length > 90 ? k.slice(0, 90) + "…" : k) })}</div>`;
     }
     const e = countBy(rows, (x) => val(x, f));
     const label = SPECIES.has(f) ? (k) => (NO_SPECIES.test(k) ? "Belum ada di daftar" : `${esc(speciesName(k))} <span class="latin">${esc(splitSpecies(k).latin)}</span>`) : null;
-    return `<div class="attr"><h4>${esc(f)}${n}</h4>${hbars(e, { limit: 8, label })}</div>`;
+    return `<div class="attr"><h4>${esc(f)}${n}</h4>${hbars(e, { limit: 10, label })}</div>`;
   }
 
   /* ---------------- render ---------------- */
@@ -572,8 +744,12 @@
       $("#content").innerHTML = `<div class="notice"><strong>Data tidak dapat dimuat.</strong> Periksa tautan Google Sheets di assets/config.js atau file ${esc(C.FALLBACK_CSV)}.</div>`;
       return;
     }
+    // Tampilan awal: hanya tahun TAHUN_AWAL (atau tahun terbaru bila tahun itu belum ada datanya).
     const months = monthRange(S.all);
-    S.from = months[0] || ""; S.to = months[months.length - 1] || "";
+    const years = [...new Set(months.map((m) => m.slice(0, 4)))];
+    const y = years.includes(String(C.TAHUN_AWAL)) ? String(C.TAHUN_AWAL) : years[years.length - 1];
+    const inYear = months.filter((m) => m.startsWith(y));
+    S.from = inYear[0] || ""; S.to = inYear[inYear.length - 1] || "";
     chrome();
     filterBar();
     update();

@@ -112,7 +112,7 @@ section.panel { background: var(--paper); border: 1px solid var(--line); border-
 @media (max-width: 900px) { .grid-2, .grid-3 { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---------- KPI tiles ---------- */
-.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(136px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
 .kpi { background: var(--paper); padding: 16px 18px; display: grid; gap: 2px; align-content: start; }
 .kpi .v { font-size: 30px; font-weight: 300; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .kpi .l { font-size: 13px; color: var(--muted); }
@@ -184,3 +184,17 @@ tfoot td { font-weight: 700; background: var(--ground); }
 
 footer { max-width: 1240px; margin: 0 auto; padding: 0 24px 32px; font-size: 12px; color: var(--faint); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* ---------- revisi 1 ---------- */
+.band .logo { display: block; height: 56px; width: auto; margin-bottom: 10px; }
+.subblocks { display: grid; gap: 22px; }
+.subblock { border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; background: var(--paper); min-width: 0; }
+.subblock .subhead { border-top: 0; padding-top: 0; margin: 0 0 14px; }
+.subblock.empty-subs { background: var(--ground); }
+.attr { min-width: 0; }
+.attr.wide { grid-column: 1 / -1; }
+details.more { margin-top: 4px; }
+details.more summary { cursor: pointer; font-size: 12px; color: var(--accent); padding: 4px 0; }
+details.more > .hbars { margin-top: 4px; }
+.crit-t { color: var(--crit); }
+.cat .d { line-height: 1.45; }
