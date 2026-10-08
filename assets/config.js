@@ -30,7 +30,7 @@ window.SMART_CONFIG = {
   CAPAIAN: [
     { label: "Capaian grid pengelolaan", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkWQwy3ECs2IrsYkBhm6d_tlrciI4K9h_VIK2OFO1hwxv7HOxA_DMjpanBFQ7nJNSIx0Aowbcs1L8g/pub?gid=0&single=true&output=csv", kolom: "" },
     { label: "ST terlaksana", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkWQwy3ECs2IrsYkBhm6d_tlrciI4K9h_VIK2OFO1hwxv7HOxA_DMjpanBFQ7nJNSIx0Aowbcs1L8g/pub?gid=865057924&single=true&output=csv", kolom: "" },
-    { label: "Capaian coverage area", url: "", kolom: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkWQwy3ECs2IrsYkBhm6d_tlrciI4K9h_VIK2OFO1hwxv7HOxA_DMjpanBFQ7nJNSIx0Aowbcs1L8g/pub?gid=1595502604&single=true&output=csv", satuan: "ha", desimal: 2 },
+    { label: "Capaian coverage area", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkWQwy3ECs2IrsYkBhm6d_tlrciI4K9h_VIK2OFO1hwxv7HOxA_DMjpanBFQ7nJNSIx0Aowbcs1L8g/pub?gid=1595502604&single=true&output=csv", kolom: "", satuan: "ha", desimal: 2 },
   ],
 
   // Layer peta tambahan (GeoJSON di folder assets). Dimuat hanya saat dicentang di peta.
