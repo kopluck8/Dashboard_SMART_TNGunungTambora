@@ -2,7 +2,7 @@
 window.SMART_CONFIG = {
   // Tautan CSV dari Google Sheets (File > Bagikan > Publikasikan ke web > pilih sheet > CSV).
   // Kosongkan untuk memakai file data/data.csv di repositori.
-  SHEET_CSV_URL: "",
+  SHEET_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTZqgHUgDRXs14VKsKvcj45GBZqFA08PC5U_76BVrR0upSuDcIIGISAhgi6M5f5CjPhuw1lWAb6ekao/pub?output=csv",
 
   // File cadangan bila Google Sheets tidak bisa dibaca.
   FALLBACK_CSV: "data/data.csv",
@@ -28,8 +28,9 @@ window.SMART_CONFIG = {
   // Tiap tab cukup 2 kolom: kolom tahun (misalnya "Capaian Grid Tahun") dan kolom jumlah (misalnya "Jumlah Capaian").
   // Bila keduanya ada di satu tab, pakai tautan yang sama dan isi "kolom" dengan judul kolom jumlahnya.
   CAPAIAN: [
-    { label: "Capaian grid pengelolaan", url: "", kolom: "" },
-    { label: "ST terlaksana", url: "", kolom: "" },
+    { label: "Capaian grid pengelolaan", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkWQwy3ECs2IrsYkBhm6d_tlrciI4K9h_VIK2OFO1hwxv7HOxA_DMjpanBFQ7nJNSIx0Aowbcs1L8g/pub?gid=0&single=true&output=csv", kolom: "" },
+    { label: "ST terlaksana", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkWQwy3ECs2IrsYkBhm6d_tlrciI4K9h_VIK2OFO1hwxv7HOxA_DMjpanBFQ7nJNSIx0Aowbcs1L8g/pub?gid=865057924&single=true&output=csv", kolom: "" },
+    { label: "Capaian coverage area", url: "", kolom: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkWQwy3ECs2IrsYkBhm6d_tlrciI4K9h_VIK2OFO1hwxv7HOxA_DMjpanBFQ7nJNSIx0Aowbcs1L8g/pub?gid=1595502604&single=true&output=csv", satuan: "ha", desimal: 2 },
   ],
 
   // Layer peta tambahan (GeoJSON di folder assets). Dimuat hanya saat dicentang di peta.
