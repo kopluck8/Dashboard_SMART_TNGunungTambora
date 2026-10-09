@@ -75,14 +75,23 @@
   }
   function speciesName(s) { const p = splitSpecies(s); return p.indo || p.lokal || p.latin; }
 
+  // Urutan tanggal angka (10/3/2026) ditentukan sekali untuk seluruh kolom: bila ada bagian kedua > 12 berarti
+  // bulan/hari (lokal AS, default Google Sheets), bila ada bagian pertama > 12 berarti hari/bulan (lokal Indonesia).
+  const DMY_RE = /^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})/;
+  let dayFirst = false;
+  function detectDateOrder(values) {
+    let df = 0, mf = 0;
+    for (const v of values) { const m = DMY_RE.exec(String(v || "").trim()); if (!m) continue; if (+m[1] > 12) df++; if (+m[2] > 12) mf++; }
+    dayFirst = df > mf;
+  }
   function parseDate(s) {
     s = String(s || "").trim();
     let m = /^([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2}),?\s+(\d{4})/.exec(s);
     if (m && m[1] in EN) return new Date(+m[3], EN[m[1]], +m[2]);
     m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s); if (m) return new Date(+m[1], m[2] - 1, +m[3]);
-    // Tanggal yang sudah diubah Google Sheets: dd/mm/yyyy (lokal Indonesia) atau m/d/yyyy (lokal AS).
-    m = /^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})/.exec(s);
-    if (m) { let [dd, mm] = [+m[1], +m[2]]; if (mm > 12 && dd <= 12) [dd, mm] = [mm, dd]; return new Date(+m[3], mm - 1, dd); }
+    // Tanggal yang sudah diubah Google Sheets: m/d/yyyy (lokal AS) atau dd/mm/yyyy (lokal Indonesia).
+    m = DMY_RE.exec(s);
+    if (m) { let [dd, mm] = dayFirst ? [+m[1], +m[2]] : [+m[2], +m[1]]; if (mm > 12 && dd <= 12) [dd, mm] = [mm, dd]; return new Date(+m[3], mm - 1, dd); }
     const d = new Date(s); return isNaN(d) ? null : d;
   }
 
@@ -167,6 +176,7 @@
     const cols = Object.keys(raw[0] || {});
     const rc = cols.find((c) => C.RESOR_COLUMNS.some((x) => hkey(x) === hkey(c)));
     S.hasResor = !!rc;
+    detectDateOrder(raw.map((r) => r["Waypoint Date"]));
     const rows = raw.filter((r) => (r["Observation Category 0"] || "").trim()).map((r) => {
       const d = parseDate(r["Waypoint Date"]);
       for (const f of C.SEMBUNYIKAN?.[r["Observation Category 0"].trim()] || []) if (f in r) r[f] = "";
