@@ -48,12 +48,69 @@ window.SMART_STATUS = {
   "Taeniopygia guttata": { dilindungi: false, iucn: "LC" },
   "Todiramphus chloris": { dilindungi: false, iucn: "LC" },
   "Zosterops melanurus": { dilindungi: false, iucn: "VU" },
+  // Tambahan 12 Okt 2026. Perlindungan dicek ke Lampiran P.92/2018 (isi daftar sama dengan P.106/2018 untuk jenis-jenis ini).
+  "Accipiter fasciatus": { dilindungi: true, iucn: "LC" },
+  "Accipiter soloensis": { dilindungi: true, iucn: "LC" },
+  "Accipiter sylvestris": { dilindungi: true, iucn: "LC" },
+  "Aerodramus vanikorensis": { dilindungi: false, iucn: "LC" },
+  "Anthreptes malacensis": { dilindungi: false, iucn: "LC" },
+  "Aplonis minor": { dilindungi: false, iucn: "LC" },
+  "Artamus leucorhynchus": { dilindungi: false, iucn: "LC" },
+  "Butorides striata": { dilindungi: false, iucn: "LC" },
+  "Cacomantis merulinus": { dilindungi: false, iucn: "LC" },
+  "Chalcites lucidus": { dilindungi: false, iucn: "LC" },
+  "Collocalia esculenta": { dilindungi: false, iucn: "LC" },
+  "Ducula aenea": { dilindungi: false, iucn: "NT" },
+  "Edolisoma dohertyi": { dilindungi: false, iucn: "LC" },
+  "Elanus caeruleus": { dilindungi: true, iucn: "LC" },
+  "Eurystomus azureus": { dilindungi: false, iucn: "NT" },
+  "Falco cenchroides": { dilindungi: true, iucn: "LC" },
+  "Falco longipennis": { dilindungi: true, iucn: "LC" },
+  "Falco moluccensis": { dilindungi: true, iucn: "LC" },
+  "Geopelia maugeus": { dilindungi: false, iucn: "LC" },
+  "Geopelia striata": { dilindungi: false, iucn: "LC" },
+  "Gracula religiosa": { dilindungi: true, iucn: "LC" },
+  "Haliaeetus leucogaster": { dilindungi: true, iucn: "LC" },
+  "Hirundo rustica": { dilindungi: false, iucn: "LC" },
+  "Lalage sueurii": { dilindungi: false, iucn: "LC" },
+  "Lonchura leucogastroides": { dilindungi: false, iucn: "LC" },
+  "Lophotriorchis kienerii": { dilindungi: true, iucn: "NT" },
+  "Nectarinia jugularis": { dilindungi: false, iucn: "LC" }, // = Cinnyris jugularis
+  "Oriolus phaeochromus": { dilindungi: false, iucn: "LC" },
+  "Otus silvicola": { dilindungi: false, iucn: "LC" },
+  "Pachycephala fulvotincta": { dilindungi: false, iucn: "LC" },
+  "Pachycephala pectoralis": { dilindungi: false, iucn: "LC" },
+  "Philemon buceroides": { dilindungi: false, iucn: "LC" },
+  "Phylloscopus borealis": { dilindungi: false, iucn: "LC" },
+  "Picoides moluccensis": { dilindungi: false, iucn: "LC" },
+  "Pitta concinna": { dilindungi: true, iucn: "LC" }, // tercantum sebagai Pitta elegans (paok laus) di lampiran
+  "Ptilinopus melanospilus": { dilindungi: false, iucn: "LC" },
+  "Pycnonotus aurigaster": { dilindungi: false, iucn: "LC" },
+  "Saxicola caprata": { dilindungi: false, iucn: "LC" },
+  "Streptopelia chinensis": { dilindungi: false, iucn: "LC" }, // = Spilopelia chinensis
+  "Trichoglossus forsteni": { dilindungi: true, iucn: "EN" },
+  "Zosterops chloris": { dilindungi: false, iucn: "LC" },
+  "Zosterops consobrinorum": { dilindungi: false, iucn: "LC" },
+  "Zosterops japonicus": { dilindungi: false, iucn: "LC" },
+  // Nama ilmiah yang tertulis keliru di SMART (nama Inggris atau salah ketik). Sebaiknya diperbaiki di data model SMART;
+  // sementara dipetakan ke status jenis yang dimaksud.
+  "Apionus minor": { dilindungi: false, iucn: "LC" }, // Aplonis minor
+  "Arctic Warbler": { dilindungi: false, iucn: "LC" }, // Phylloscopus borealis
+  "Australian Hobby": { dilindungi: true, iucn: "LC" }, // Falco longipennis
+  "Grey-capped Emerald Dove": { dilindungi: false, iucn: "LC" }, // Chalcophaps indica
+  "Helmeted Friarbird": { dilindungi: false, iucn: "LC" }, // Philemon buceroides
+  "Pied Bushchat": { dilindungi: false, iucn: "LC" }, // Saxicola caprata
+  "Sooty-headed Bulbul": { dilindungi: false, iucn: "LC" }, // Pycnonotus aurigaster
+  "Zitting Cisticola": { dilindungi: false, iucn: "LC" }, // Cisticola juncidis
   // Mamalia
   "Macaca fascicularis": { dilindungi: false, iucn: "EN" },
   "Rusa timorensis": { dilindungi: true, iucn: "VU" },
   "Sus scrofa": { dilindungi: false, iucn: "LC" },
   // Reptil
   "Ahaetulla prasina": { dilindungi: false, iucn: "LC" },
+  "Varanus spp": { dilindungi: false, iucn: "NE" }, // tingkat marga; biawak di Sumbawa umumnya Varanus salvator (tidak dilindungi, LC)
   // Serangga
   "Ideopsis juventa": { dilindungi: false, iucn: "NE" },
+  "Apis dorsata": { dilindungi: false, iucn: "NE" },
+  "Cicadidae": { dilindungi: false, iucn: "NE" }, // tingkat suku
 };
