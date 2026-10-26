@@ -372,7 +372,8 @@
     maps.push(map);
     const sat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 18, attribution: "Citra: Esri" });
     const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18, attribution: "© OpenStreetMap" });
-    const dark = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { maxZoom: 18, subdomains: "abcd", attribution: "© OpenStreetMap © CARTO" });
+    // Peta gelap Esri: gratis tanpa API key (CARTO kini meminta key).
+    const dark = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 18, maxNativeZoom: 16, attribution: "Peta: Esri, HERE, Garmin, © OpenStreetMap" });
     dark.addTo(map);
     // Layer GeoJSON tambahan: kosong sampai dicentang, baru dimuat saat itu supaya halaman tetap ringan.
     const overlays = {};
