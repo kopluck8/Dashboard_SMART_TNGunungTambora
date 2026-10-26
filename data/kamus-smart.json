@@ -1,0 +1,333 @@
+{
+ "kategori": {
+  "aktivitasmanusia.alatkerjadantransportasi.": [
+   "Aktivitas Manusia",
+   "Alat Kerja dan Transportasi"
+  ],
+  "aktivitasmanusia.kebakaranhutandanlahan.": [
+   "Aktivitas Manusia",
+   "Kebakaran Hutan dan Lahan"
+  ],
+  "aktivitasmanusia.pembalakan.": [
+   "Aktivitas Manusia",
+   "Pembalakan"
+  ],
+  "aktivitasmanusia.pengambilanhhbk.": [
+   "Aktivitas Manusia",
+   "Pengambilan HHBK"
+  ],
+  "aktivitasmanusia.pengembalaanternak.": [
+   "Aktivitas Manusia",
+   "Pengembalaan Ternak"
+  ],
+  "aktivitasmanusia.penggunaankawasan.": [
+   "Aktivitas Manusia",
+   "Penggunaan Kawasan"
+  ],
+  "aktivitasmanusia.perburuansatwa.": [
+   "Aktivitas Manusia",
+   "Perburuan Satwa"
+  ],
+  "fitur.fituralami.": [
+   "Fitur",
+   "Fitur Alami"
+  ],
+  "fitur.infrastruktursaranaprasarana.": [
+   "Fitur",
+   "Infrastruktur/ Sarana dan Prasarana"
+  ],
+  "fitur.mediainformasi.": [
+   "Fitur",
+   "Media Informasi"
+  ],
+  "fitur.palbatas.": [
+   "Fitur",
+   "Pal Batas"
+  ],
+  "groundcheck.tipeekosis.": [
+   "Ground Check",
+   "Tipe Ekosistem"
+  ],
+  "groundcheck.tutupanlahan.": [
+   "Ground Check",
+   "Tutupan Lahan"
+  ],
+  "penjagaanjalurpendakiandanodtwa.pelayananpengunjungwisata.": [
+   "Penjagaan Jalur Pendakian dan ODTWA",
+   "Pelayanan Pengunjung Wisata"
+  ],
+  "satwaliar.jejaksatwa.": [
+   "Satwa Liar",
+   "Tanda Satwa"
+  ],
+  "satwaliar.perjumpaansatwa.": [
+   "Satwa Liar",
+   "Perjumpaan Satwa"
+  ],
+  "sosialisasidananjangsana.anjangsana.": [
+   "Penyuluhan dan Pemberdayaan Masyarakat",
+   "Anjangsana"
+  ],
+  "sosialisasidananjangsana.sosialisasi.": [
+   "Penyuluhan dan Pemberdayaan Masyarakat",
+   "Sosialisasi"
+  ],
+  "tumbuhan.": [
+   "Tumbuhan",
+   ""
+  ]
+ },
+ "atribut": {
+  "alamat": "Alamat",
+  "asal": "Asal",
+  "azimuth": "Azimuth (derajat)",
+  "jarakkesatwam": "Jarak ke satwa (m)",
+  "jeniskegiatan": "Jenis kegiatan",
+  "jeniskelamin": "Jenis kelamin",
+  "jeniskelaminsatwa": "Jenis kelamin satwa",
+  "jenissatwa": "Jenis satwa",
+  "jenistumbuhan": "Jenis tumbuhan",
+  "jeniswisata": "Jenis Kegiatan Wisata",
+  "jumlah": "Jumlah",
+  "jumlahpartisipan": "Jumlah partisipan",
+  "keaktifan": "Keaktifan",
+  "keterangan": "Keterangan",
+  "klasifikasi01": "Klasifikasi 01",
+  "klasifikasi02": "Klasifikasi 02",
+  "klasifikasi1te": "Klasifikasi 1",
+  "klasifikasi2te": "Klasifikasi 2",
+  "klasifikasi3": "Klasifikasi 3",
+  "klasifikasi4": "Klasifikasi 4",
+  "kodetandaternak": "Kode Tanda Ternak",
+  "kondisi": "Kondisi",
+  "kondisisatwa": "Kondisi satwa",
+  "kondisitumbuhan": "Kondisi tumbuhan",
+  "lokasi": "Lokasi",
+  "moduspenggunaankawasan": "Modus penggunaan kawasan",
+  "namakelompok": "Nama kelompok",
+  "namamasyarakat": "Nama Masyarakat",
+  "namapelakuindikatif": "Nama pelaku indikatif",
+  "nopal": "No. pal",
+  "pelanggaran": "Pelanggaran",
+  "penyebabkebakaran": "Penyebab Kebakaran",
+  "perlutindaklanjut": "Perlu tindak lanjut",
+  "satuan": "Satuan",
+  "status": "Status",
+  "tindakan": "Tindakan",
+  "tipetemuan": "Tipe temuan",
+  "umursatwa": "Umur satwa",
+  "usiatemuan": "Usia temuan",
+  "vegetasiterdampak": "Vegetasi Terdampak"
+ },
+ "item": {
+  "jeniskegiatan": {
+   "penyuluhandansosialisasi.anjangsana.": "Anjangsana",
+   "penyuluhandansosialisasi.penyuluhandansosialisasilainnya.": "Penyuluhan dan sosialisasi lainnya"
+  },
+  "jeniskelamin": {
+   "laki": "L"
+  },
+  "jeniskelaminsatwa": {
+   "jantan": "Jantan",
+   "tidaktahu": "Tidak tahu"
+  },
+  "jenissatwa": {
+   "belumadadilist.": "Belum ada di list",
+   "burung.": "Burung",
+   "burung.apungsawahanthusrufulus.": "Apung sawah - Anthus rufulus",
+   "burung.ayamhutanhijaugallusvarius.": "Ayam Hutan Hijau - Gallus varius",
+   "burung.bubutalangalangcentropusbengalensis.": "Bubut alang-alang - Centropus bengalensis",
+   "burung.burungmadusriganticinnyrisjugularis.": "Burung-madu sriganti - Cinnyris jugularis",
+   "burung.cikukuatandukphilemonbuceroides.": "Cikukua tanduk - Philemon buceroides",
+   "burung.cucakkutilangpycnonotusaurigaster.": "Cucak kutilang - Pycnonotus aurigaster",
+   "burung.elang.": "Elang",
+   "burung.elangbondolhaliasturindus.": "Elang Bondol - Haliastur indus",
+   "burung.elangfloresnisaetusfloris.": "Elang Flores - Nisaetus floris",
+   "burung.elangularjaripendekcircaetusgallicus.": "Elang Ular Jari Pendek - Circaetus gallicus",
+   "burung.gagakkampungcorvusmacrorhynchos.": "Gagak kampung - Corvus macrorhynchos",
+   "burung.isapmaduaustralialichmeraindistincta.": "Isap-madu australia - Lichmera indistincta",
+   "burung.kekepbabiartamusleucoryn.": "Kekep babi - Artamus leucoryn",
+   "burung.kepudangkudukhitamorioluschinensis.": "Kepudang kuduk-hitam - Oriolus chinensis",
+   "burung.kirikkirikaustraliameropsornatus.": "Kirik-kirik australia - Merops ornatus",
+   "burung.kirikkiriklautmeropsphilippinus.": "Kirik-kirik laut - Merops philippinus",
+   "burung.nuripipimerahgeoffroyusgeoffroyi.": "Nuri Pipi Merah - Geoffroyus geoffroyi",
+   "burung.opiorjambulheleiadohertyi.": "Opior jambul - Heleia dohertyi",
+   "burung.sriguntingwallaceadicrurusdensus.": "Srigunting wallacea - Dicrurus densus",
+   "burung.tekukurbiasaspilopeliachinensis.": "Tekukur biasa - Spilopelia chinensis",
+   "burung.uncalbuaumacropygiaemiliana.": "Uncal buau - Macropygia emiliana",
+   "burung.walettenggaracollocaliasumbawae.": "Walet tenggara - Collocalia sumbawae",
+   "mamalia.babihutansusscrofa.": "Babi Hutan - Sus scrofa",
+   "mamalia.rusatimorrusatimorensis.": "Rusa Timor - Rusa timorensis",
+   "primata.monyetekorpanjangmacacafascicularis.": "Monyet Ekor Panjang - Macaca fascicularis",
+   "serangga.capung.": "Capung",
+   "serangga.kupukupu.": "Kupu-kupu"
+  },
+  "jenistumbuhan": {
+   "tumbuhaninvasif.akasiadaunkecilacaciaaulicoliformes.": "Akasia Daun Kecil - Acacia aulicoliformes",
+   "tumbuhantambora.": "Tumbuhan Tambora",
+   "tumbuhantambora.angrek.": "Angrek",
+   "tumbuhantambora.bara.": "Bara",
+   "tumbuhantambora.belumadadilist.": "Belum Ada di List",
+   "tumbuhantambora.dueberinginficusbenjamina.": "Due - Beringin - Ficus benjamina",
+   "tumbuhantambora.duwetsyzygiumcumini.": "Duwet - Syzygium cumini",
+   "tumbuhantambora.golkarkerinyuhchromolaenaodorata.": "Golkar - Kerinyuh - Chromolaena odorata",
+   "tumbuhantambora.jatidorosimpurdilleniapentagyna.": "Jati doro - Simpur - Dillenia pentagyna",
+   "tumbuhantambora.kabahokafamengkiraitremaorientale.": "Kabaho kafa - Mengkirai - Trema orientale",
+   "tumbuhantambora.kalanggo.": "Kalanggo - Rajumas - Duabanga moluccana",
+   "tumbuhantambora.kanangaburagmelinaelliptica.": "Kananga bura - - Gmelina elliptica",
+   "tumbuhantambora.katowipalaquiumamboinense.": "Katowi - - Palaquium amboinense",
+   "tumbuhantambora.keranonyawaificusvariegata.": "Kerano - Nyawai - Ficus variegata",
+   "tumbuhantambora.kingkilabanmussaendafrondosa.": "- Kingkilaban - Mussaenda frondosa",
+   "tumbuhantambora.loatrenggulunprotiumjavanicum.": "Loa - Trenggulun - Protium javanicum",
+   "tumbuhantambora.lokalelakuvariarufa.": "Loka - Lelak - Uvaria rufa",
+   "tumbuhantambora.luhuwalikukunschouteniaovata.": "Luhu - Walikukun - Schoutenia ovata",
+   "tumbuhantambora.maladihajujelatanggajahdendrocnidestimulans.": "Maladi haju - Jelatang gajah - Dendrocnide stimulans",
+   "tumbuhantambora.manggeasamjawatamarindusindica.": "Mangge - Asam jawa - Tamarindus indica",
+   "tumbuhantambora.monggokalasalamsyzygiumpolyanthum.": "Monggo Kala - Salam - Syzygium polyanthum",
+   "tumbuhantambora.mporingamealangalangimperatacylindrica.": "Mpori ngame - Alang-alang - Imperata cylindrica",
+   "tumbuhantambora.mposuawarawarficusseptica.": "Mposu - Awar-awar - Ficus septica",
+   "tumbuhantambora.naaloaaraficusracemosa.": "Na'a - Loa ara - Ficus racemosa",
+   "tumbuhantambora.ndantandoloandulpakhomalanthusgiganteus.": "Danta ndolo - Andulpak - Homalanthus giganteus",
+   "tumbuhantambora.ndantandolomahangmacarangatanarius.": "Danta ndolo - Mahang - Macaranga tanarius",
+   "tumbuhantambora.ndaruwerualbiziaprocera.": "Ndaru - Weru - Albizia procera",
+   "tumbuhantambora.owoararatuficusalbipila.": "Owo - Ara ratu - Ficus albipila",
+   "tumbuhantambora.papitesekdodonaeaviscosa.": "Papi - Tesek - Dodonaea viscosa",
+   "tumbuhantambora.patopopohangetasanbuchananiaarborescens.": "Pato - Popohan/Getasan - Buchanania arborescens",
+   "tumbuhantambora.ranggabidaraziziphusmauritiana.": "Rangga - Bidara - Ziziphus mauritiana",
+   "tumbuhantambora.rapugenggirangleeaangulata.": "Rapu - Genggirang - Leea angulata",
+   "tumbuhantambora.ridapulaialstoniascholaris.": "Rida - Pulai - Alstonia scholaris",
+   "tumbuhantambora.rinocenderaigrewiaeriocarpa.": "Rino - Cenderai - Grewia eriocarpa",
+   "tumbuhantambora.rufepiliostigmamalabaricum.": "Rufe -  - Piliostigma malabaricum",
+   "tumbuhantambora.sabiacabaijawapiperretrofractum.": "Sabia - Cabai jawa - Piper retrofractum",
+   "tumbuhantambora.safarebura.": "Safare Bura",
+   "tumbuhantambora.sambikesambischleicheraoleosa.": "Sambi - Kesambi - Schleichera oleosa",
+   "tumbuhantambora.sareoterisialbizialebbekoides.": "Sareo - Terisi - Albizia lebbekoides",
+   "tumbuhantambora.sarumearaacronychiatrifoliolata.": "Sarume ara -  - Acronychia trifoliolata",
+   "tumbuhantambora.sarumemajumalakaphyllanthusemblica.": "Sarume maju - Malaka - Phyllanthus emblica",
+   "tumbuhantambora.sonokelirsonokelingdalbergialatifolia.": "Sonokelir - Sonokeling - Dalbergia latifolia",
+   "tumbuhantambora.teridetembelekanlantanacamara.": "Teride - Tembelekan - Lantana camara",
+   "tumbuhantambora.toaketimunantimoniustimon.": "Toa - Ketimunan - Timonius timon",
+   "tumbuhantambora.tulalegaranalstoniaspectabilis.": "Tula - Legaran - Alstonia spectabilis"
+  },
+  "jeniswisata": {
+   "jeniswisata.pendakianberkendara.": "Pendakian Berkendara"
+  },
+  "keaktifan": {
+   "aktif": "Aktif"
+  },
+  "klasifikasi01": {
+   "nonopenarea.": "Non Open Area",
+   "openarea.": "Open Area"
+  },
+  "klasifikasi02": {
+   "hutanhujan": "Hutan Hujan",
+   "hutanmonsun": "Hutan Monsun",
+   "ladang": "Ladang",
+   "savanapadangrumput": "Savana/ Padang Rumput",
+   "semak": "Semak"
+  },
+  "klasifikasi1te": {
+   "alami.": "Alami"
+  },
+  "klasifikasi2te": {
+   "ekosistemteresterial.": "Ekosistem Teresterial"
+  },
+  "klasifikasi3": {
+   "daratanrendah01000mdpl.": "Daratan Rendah (0-1000mdpl)",
+   "pegununganbawah10001500mdpl.": "Pegunungan Bawah (1000-1500mdpl)"
+  },
+  "klasifikasi4": {
+   "hutanpamah": "Hutan Pamah",
+   "hutanpegununganbawah": "Hutan Pegunungan Bawah",
+   "padangrumput": "Padang Rumput",
+   "pamah": "Pamah",
+   "savana": "Savana",
+   "sungai": "Sungai"
+  },
+  "kondisi": {
+   "baik": "Baik",
+   "roboh": "Roboh",
+   "rusak": "Rusak"
+  },
+  "kondisisatwa": {
+   "hidup": "Hidup",
+   "sehat": "Sehat"
+  },
+  "kondisitumbuhan": {
+   "mati": "Mati",
+   "sakit": "Sakit",
+   "sehat": "Sehat",
+   "tumbang": "Tumbang"
+  },
+  "moduspenggunaankawasan": {
+   "lainnya": "Lainnya",
+   "membeli": "Ganti Rugi",
+   "membukasendiri": "Membuka sendiri"
+  },
+  "pelanggaran": {
+   "bukanpelanggaran": "Bukan",
+   "pelanggaran": "Ya"
+  },
+  "penyebabkebakaran": {
+   "nonalami": "Non Alami"
+  },
+  "perlutindaklanjut": {
+   "tidak": "Tidak",
+   "ya": "Ya"
+  },
+  "satuan": {
+   "batang": "batang",
+   "ekor": "ekor",
+   "hektar": "hektar",
+   "individu": "individu",
+   "orang": "orang",
+   "unit": "unit"
+  },
+  "status": {
+   "active": "Active",
+   "dilindungi": "Dilindungi",
+   "tidakdilindungi": "Tidak Dilindungi",
+   "unknown": "Unknown"
+  },
+  "tindakan": {
+   "tindakanterhadapobyek.didokumentasi.": "Didokumentasi",
+   "tindakanterhadapobyek.dilaporkan.": "Dilaporkan",
+   "tindakanterhadapobyek.disita.": "Disita",
+   "tindakanterhadappelaku.peringatanlisan.": "Peringatan lisan/pembinaan"
+  },
+  "tipetemuan": {
+   "alatkerja.gubuk.": "Gubuk/camp/bevak",
+   "fituralami.alur.": "Alur",
+   "fituralami.tampunganataugenanganair.": "Tampungan atau genangan air",
+   "infrastruktursaranadanprasarana.pospendakian.": "Pos Pendakian",
+   "jejak.kubangan.": "Kubangan",
+   "jejak.suara.": "Suara",
+   "kebakaranhutandanlahan.bekaskebakaran.": "Bekas kebakaran",
+   "kelompoktumbuhan.tumbuhanbawah.": "Tumbuhan Bawah",
+   "kelompoktumbuhan.tumbuhanfungsilainnya.": "Tumbuhan fungsi lainnya",
+   "kelompoktumbuhan.tumbuhankayukeras.": "Tumbuhan kayu keras",
+   "kelompoktumbuhan.tumbuhanobat.": "Tumbuhan obat",
+   "kelompoktumbuhan.tumbuhanpakansatwa.": "Tumbuhan pakan satwa",
+   "mediainformasi.papaninformasi.": "Papan informasi",
+   "mediainformasi.papanlarangan.": "Papan Larangan",
+   "palbatas.beton.": "Beton",
+   "pembalakan.pembalak.": "Pembalak",
+   "pengambilanhhbk.madu.": "Madu",
+   "penggunaankawasan.kebun.": "Kebun",
+   "penggunaankawasan.ladang.": "Ladang",
+   "penggunaankawasan.pelakupembukaanlahan.": "Pelaku pembukaan lahan",
+   "perburuansatwa.pemburu.": "Pemburu"
+  },
+  "umursatwa": {
+   "dewasa": "Dewasa",
+   "remaja": "Remaja",
+   "tidaktahu": "Tidak tahu"
+  },
+  "usiatemuan": {
+   "barudalam1minggu": "Baru (dalam 1 minggu)",
+   "cukuplama1bulan": "Cukup lama (>1 bulan)",
+   "diatas1tahun": "Diatas 1 tahun",
+   "sangatlama3bulan": "Sangat lama (>3bulan)"
+  }
+ }
+}
