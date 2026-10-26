@@ -1,51 +1,33 @@
-/* Layout: charcoal header band with caldera contour lines (mirrors the Google Site sidebar + hero),
-   tab nav, then a white working surface of sections on a pale green-grey ground. */
+/* Tema "Ruang Kendali Patroli": panel gelap ala pusat komando, angka monospace, aksen toska menyala
+   (meneruskan warna toska Google Site), peta bergaya radar. Satu tema gelap untuk semua perangkat. */
 :root {
-  --ground: #f3f5f3;
-  --paper: #ffffff;
-  --ink: #1f2321;
-  --muted: #5b6460;
-  --faint: #8a938e;
-  --line: #e1e5e2;
-  --accent: #2c7a69;
-  --accent-ink: #ffffff;
-  --accent-soft: #e2efeb;
-  --band: #212121;
-  --band-ink: #f4f6f5;
-  --band-muted: #b9c2bd;
-  --warn: #9a5b00;
-  --warn-soft: #fbefdc;
-  --crit: #b3261e;
-  --crit-soft: #fbe6e4;
-  --good: #1d7a3a;
-  --map-bg: #dfe6e1;
-  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
-  --s5: #e87ba4; --s6: #008300; --s7: #4a3aa7; --s8: #e34948;
-  --f-display: "Lato", "Helvetica Neue", Arial, sans-serif;
-  --f-body: "Lato", "Helvetica Neue", Arial, sans-serif;
-  --radius: 6px;
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --ground: #141615; --paper: #1c1f1e; --ink: #eef1ef; --muted: #a7b0ab; --faint: #7d8782;
-    --line: #2e3331; --accent: #5fb8a3; --accent-ink: #0f1513; --accent-soft: #1f3530;
-    --band: #0e0f0f; --band-ink: #f4f6f5; --band-muted: #9aa49f;
-    --warn: #e0a64a; --warn-soft: #3a2c14; --crit: #f08a80; --crit-soft: #3b1d1a; --good: #6cc48a;
-    --map-bg: #26302b;
-    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
-    --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --ground: #141615; --paper: #1c1f1e; --ink: #eef1ef; --muted: #a7b0ab; --faint: #7d8782;
-  --line: #2e3331; --accent: #5fb8a3; --accent-ink: #0f1513; --accent-soft: #1f3530;
-  --band: #0e0f0f; --band-ink: #f4f6f5; --band-muted: #9aa49f;
-  --warn: #e0a64a; --warn-soft: #3a2c14; --crit: #f08a80; --crit-soft: #3b1d1a; --good: #6cc48a;
-  --map-bg: #26302b;
-  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
-  --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+  --ground: #060a0c;
+  --paper: #0c1317;
+  --paper-2: #101a1f;
+  --ink: #dbe8ea;
+  --muted: #8ba3a9;
+  --faint: #5d747a;
+  --line: #1b2a30;
+  --line-2: #27404a;
+  --accent: #35e0c4;
+  --accent-ink: #03110e;
+  --accent-soft: rgba(53, 224, 196, .10);
+  --glow: 0 0 12px rgba(53, 224, 196, .45);
+  --band: #050809;
+  --band-ink: #e6f4f2;
+  --band-muted: #7f9aa0;
+  --warn: #ffb547;
+  --warn-soft: rgba(255, 181, 71, .12);
+  --crit: #ff6b6b;
+  --crit-soft: rgba(255, 107, 107, .13);
+  --good: #5ef08a;
+  --map-bg: #0a1215;
+  --s1: #38bdf8; --s2: #f59e0b; --s3: #34d399; --s4: #f472b6;
+  --s5: #a78bfa; --s6: #bef264; --s7: #fb923c; --s8: #f87171;
+  --f-display: "Chakra Petch", "Rajdhani", "Arial Narrow", sans-serif;
+  --f-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --radius: 2px;
   color-scheme: dark;
 }
 
@@ -199,3 +181,130 @@ details.more summary { cursor: pointer; font-size: 12px; color: var(--accent); p
 details.more > .hbars { margin-top: 4px; }
 .crit-t { color: var(--crit); }
 .cat .d { line-height: 1.45; }
+
+/* ================= Tema Ruang Kendali Patroli ================= */
+body {
+  background:
+    radial-gradient(1200px 600px at 70% -10%, rgba(53, 224, 196, .07), transparent 60%),
+    linear-gradient(rgba(53, 224, 196, .035) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(90deg, rgba(53, 224, 196, .035) 1px, transparent 1px) 0 0 / 32px 32px,
+    var(--ground);
+  background-attachment: fixed;
+}
+::selection { background: var(--accent); color: var(--accent-ink); }
+
+/* header: konsol komando */
+.band { border-bottom: 1px solid var(--line-2); box-shadow: 0 1px 0 rgba(53, 224, 196, .15), 0 12px 40px rgba(0, 0, 0, .5); }
+.band::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, .025) 0 1px, transparent 1px 3px);
+}
+.band svg.radar { position: absolute; right: -40px; top: -90px; width: 420px; height: 420px; color: var(--accent); opacity: .5; pointer-events: none; }
+.band svg.radar .sweep { transform-origin: 210px 210px; animation: sweep 6s linear infinite; }
+@keyframes sweep { to { transform: rotate(360deg); } }
+.eyebrow { font-family: var(--f-mono); font-size: 11px; letter-spacing: .18em; color: var(--accent); }
+.band h1 { font-weight: 600; text-transform: uppercase; letter-spacing: .04em; text-shadow: 0 0 24px rgba(53, 224, 196, .25); }
+.band .lede { font-size: 14px; }
+.status {
+  display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; margin: 0 0 16px;
+  font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--band-muted);
+}
+.status b { color: var(--band-ink); font-weight: 500; }
+.status .live { display: inline-flex; align-items: center; gap: 7px; color: var(--good); }
+.status .live::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--good); box-shadow: 0 0 8px var(--good); animation: blink 1.6s ease-in-out infinite; }
+@keyframes blink { 50% { opacity: .25; } }
+.tabs { gap: 4px; padding-bottom: 0; }
+.tabs a { font-family: var(--f-display); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; border: 1px solid transparent; border-bottom: 2px solid transparent; padding: 8px 12px 9px; }
+.tabs a:hover { background: var(--accent-soft); }
+.tabs a[aria-current="page"] { color: var(--accent); border-color: var(--line-2); border-bottom-color: var(--accent); background: linear-gradient(to top, rgba(53, 224, 196, .14), transparent); text-shadow: var(--glow); font-weight: 600; }
+.tabs .count { font-family: var(--f-mono); font-size: 11px; }
+
+/* filter: bilah kendali */
+.filters { background: rgba(10, 17, 20, .86); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-color: var(--line-2); }
+.filters label { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .14em; color: var(--accent); }
+.filters select, .search { background: var(--ground); border-color: var(--line-2); font-family: var(--f-mono); font-size: 13px; }
+.filters select:focus, .search:focus { border-color: var(--accent); box-shadow: var(--glow); outline: none; }
+.filters .meta { font-family: var(--f-mono); font-size: 12px; }
+.btn { background: var(--ground); border-color: var(--line-2); font-family: var(--f-mono); font-size: 12px; letter-spacing: .04em; }
+.btn.on { box-shadow: var(--glow); }
+
+/* panel bertanda sudut ala HUD */
+section.panel, .subblock {
+  background:
+    linear-gradient(var(--accent), var(--accent)) top left / 14px 1px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) top left / 1px 14px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) top right / 14px 1px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) top right / 1px 14px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) bottom left / 14px 1px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) bottom left / 1px 14px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) bottom right / 14px 1px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) bottom right / 1px 14px no-repeat,
+    linear-gradient(180deg, var(--paper-2), var(--paper));
+}
+.subblock { background-size: 10px 1px, 1px 10px, 10px 1px, 1px 10px, 10px 1px, 1px 10px, 10px 1px, 1px 10px, auto; }
+.panel h2, .section-title { font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+.panel h2 { font-size: 17px; display: flex; align-items: center; gap: 10px; }
+.panel h2::before { content: ""; flex: none; width: 6px; height: 6px; background: var(--accent); box-shadow: var(--glow); }
+.section-title { font-size: 22px; color: var(--accent); text-shadow: var(--glow); }
+.panel h3, .attr h4 { font-family: var(--f-display); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; color: var(--muted); }
+.panel h3 { font-size: 13px; }
+
+/* KPI: penghitung digital */
+.kpis { background: var(--line-2); border-color: var(--line-2); }
+.kpi { background: linear-gradient(180deg, var(--paper-2), var(--paper)); position: relative; }
+.kpi::before { content: ""; position: absolute; left: 0; top: 0; width: 100%; height: 2px; background: linear-gradient(90deg, var(--accent), transparent 70%); opacity: .7; }
+.kpi .v { font-family: var(--f-mono); font-weight: 500; font-size: 28px; color: var(--accent); text-shadow: var(--glow); letter-spacing: -.02em; }
+.kpi .v.long { font-size: 20px; }
+.kpi .l { font-family: var(--f-display); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+.kpi .n { font-family: var(--f-mono); font-size: 11px; }
+.kpi.crit .v { text-shadow: 0 0 12px rgba(255, 107, 107, .5); }
+.kpi.crit::before { background: linear-gradient(90deg, var(--crit), transparent 70%); }
+.kpi.warn .v { text-shadow: 0 0 12px rgba(255, 181, 71, .45); }
+.kpi.warn::before { background: linear-gradient(90deg, var(--warn), transparent 70%); }
+
+/* kartu kategori */
+.cat { background: var(--paper-2); border-color: var(--line-2); transition: border-color .15s, box-shadow .15s, transform .15s; }
+.cat:hover { box-shadow: var(--glow); transform: translateY(-1px); }
+.cat .v { font-family: var(--f-mono); font-weight: 500; color: var(--accent); }
+.cat .t { font-family: var(--f-display); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+.cat .bar { background: var(--line); }
+.cat .bar b { box-shadow: var(--glow); }
+
+/* batang & tabel */
+.hbar .track { background: var(--line); height: 5px; }
+.hbar .track b { box-shadow: 0 0 6px rgba(53, 224, 196, .35); }
+.hbar .val { font-family: var(--f-mono); font-size: 12px; }
+.legend { font-family: var(--f-mono); font-size: 11.5px; }
+.legend i { border-radius: 0; box-shadow: 0 0 6px currentColor; }
+.table-wrap { border-color: var(--line-2); }
+table { font-size: 13px; }
+td.num { font-family: var(--f-mono); font-size: 12.5px; }
+th { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .12em; color: var(--accent); background: #081014; font-weight: 500; }
+tbody tr:hover td { background: rgba(53, 224, 196, .07); }
+tr.sptn td { color: var(--accent); }
+.pill { font-family: var(--f-mono); font-size: 11px; border-radius: 1px; border: 1px solid var(--line-2); }
+.pill.crit { border-color: rgba(255, 107, 107, .4); }
+.pill.warn { border-color: rgba(255, 181, 71, .4); }
+.notice { background: var(--warn-soft); border-color: rgba(255, 181, 71, .35); }
+details.more summary { font-family: var(--f-mono); }
+
+/* peta: layar radar */
+.map-frame { position: relative; }
+.map { border-color: var(--line-2); box-shadow: inset 0 0 0 1px rgba(53, 224, 196, .08); }
+.map-frame::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 450; border-radius: 4px;
+  background: radial-gradient(circle at 50% 50%, transparent 55%, rgba(0, 0, 0, .45));
+}
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--paper-2); color: var(--ink); border: 1px solid var(--line-2); box-shadow: 0 6px 24px rgba(0, 0, 0, .6); }
+.leaflet-popup-content-wrapper { border-radius: 2px; }
+.leaflet-popup-content b { color: var(--accent); font-family: var(--f-mono); font-weight: 500; }
+.leaflet-container a.leaflet-popup-close-button { color: var(--muted); }
+.leaflet-control-layers, .leaflet-bar a { background: var(--paper-2); color: var(--ink); border-color: var(--line-2) !important; }
+.leaflet-control-layers { border: 1px solid var(--line-2) !important; border-radius: 2px; font-family: var(--f-mono); font-size: 12px; }
+.leaflet-bar a:hover { background: var(--line-2); color: var(--accent); }
+.leaflet-control-layers-toggle { filter: invert(1) hue-rotate(180deg); }
+.leaflet-control-attribution { background: rgba(6, 10, 12, .75) !important; color: var(--faint); }
+.leaflet-control-attribution a { color: var(--muted); }
+.leaflet-tooltip { background: var(--paper-2); color: var(--ink); border-color: var(--line-2); }
+
+footer { font-family: var(--f-mono); font-size: 11px; letter-spacing: .04em; }
