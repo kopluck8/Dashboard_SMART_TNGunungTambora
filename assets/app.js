@@ -219,18 +219,23 @@
   }
 
   /* ---------------- chrome ---------------- */
-  function contours() {
-    // Garis kontur kaldera bergaya (dekoratif), digambar sekali.
+  function radar() {
+    // Layar radar dekoratif di kepala halaman: cincin jarak, garis silang, dan sapuan berputar.
     let p = "";
-    for (let i = 1; i <= 11; i++) {
-      const rx = 30 + i * 22, ry = 18 + i * 13, pts = [];
-      for (let a = 0; a <= 64; a++) {
-        const t = (a / 64) * Math.PI * 2, w = 1 + 0.06 * Math.sin(t * 3 + i) + 0.04 * Math.cos(t * 5 - i * 0.7);
-        pts.push((280 + Math.cos(t) * rx * w).toFixed(1) + "," + (180 + Math.sin(t) * ry * w).toFixed(1));
-      }
-      p += `<polyline points="${pts.join(" ")}" fill="none" stroke="currentColor" stroke-width="${i % 4 === 0 ? 1.4 : 0.7}"/>`;
+    for (let i = 1; i <= 5; i++) p += `<circle cx="210" cy="210" r="${i * 40}" fill="none" stroke="currentColor" stroke-width="${i === 5 ? 1.2 : 0.6}" opacity="${i === 5 ? 0.9 : 0.5}"/>`;
+    for (let a = 0; a < 360; a += 10) {
+      const t = (a * Math.PI) / 180, r1 = a % 30 ? 194 : 186;
+      p += `<line x1="${(210 + Math.cos(t) * r1).toFixed(1)}" y1="${(210 + Math.sin(t) * r1).toFixed(1)}" x2="${(210 + Math.cos(t) * 200).toFixed(1)}" y2="${(210 + Math.sin(t) * 200).toFixed(1)}" stroke="currentColor" stroke-width="0.8"/>`;
     }
-    return `<svg class="contours" viewBox="0 0 560 360" aria-hidden="true">${p}</svg>`;
+    p += `<line x1="10" y1="210" x2="410" y2="210" stroke="currentColor" stroke-width="0.5" opacity="0.5"/><line x1="210" y1="10" x2="210" y2="410" stroke="currentColor" stroke-width="0.5" opacity="0.5"/>`;
+    const blips = [[120, 160], [270, 140], [300, 260], [170, 300], [240, 220]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.5" fill="currentColor"/>`).join("");
+    return `<svg class="radar" viewBox="0 0 420 420" aria-hidden="true"><defs><linearGradient id="sw" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="currentColor" stop-opacity="0"/><stop offset="1" stop-color="currentColor" stop-opacity=".55"/></linearGradient></defs>${p}${blips}<g class="sweep"><path d="M210 210 L410 210 A200 200 0 0 0 351.4 68.6 Z" fill="url(#sw)"/><line x1="210" y1="210" x2="410" y2="210" stroke="currentColor" stroke-width="1.5"/></g></svg>`;
+  }
+  function clock() {
+    // Jam WITA (UTC+8) untuk bilah status.
+    const el = $("#clock"); if (!el) return;
+    const t = new Date(Date.now() + 8 * 3600e3);
+    el.textContent = pad(t.getUTCHours()) + ":" + pad(t.getUTCMinutes()) + ":" + pad(t.getUTCSeconds()) + " WITA";
   }
   function chrome() {
     const cat = M.find((c) => c.slug === PAGE);
@@ -240,11 +245,14 @@
     const tabs = [`<a href="index.html"${!cat ? ' aria-current="page"' : ""}>Overview Kawasan</a>`]
       .concat(M.map((c) => `<a href="${c.slug}.html"${cat === c ? ' aria-current="page"' : ""}>${esc(c.short)}<span class="count">${fmt(counts[c.name] || 0)}</span></a>`));
     document.title = title + " · Data SMART Patrol";
-    $("#band").innerHTML = `${contours()}<div class="band-inner">
+    const last = S.all.reduce((m, x) => (x.d && (!m || x.d > m) ? x.d : m), null);
+    $("#band").innerHTML = `${radar()}<div class="band-inner">
       ${C.LOGO ? `<img class="logo" src="${esc(C.LOGO)}" alt="" onerror="this.remove()">` : ""}
       <p class="eyebrow">${esc(C.NAMA_KAWASAN)} · Data SMART Patrol</p>
       <h1>${esc(title)}</h1><p class="lede">${esc(lede)}</p>
+      <p class="status"><span class="live">Data aktif</span><span>Observasi terakhir <b>${dLabel(last)}</b></span><span>Total <b>${fmt(S.all.length)}</b> observasi</span><span id="clock"></span></p>
       <nav class="tabs" aria-label="Halaman">${tabs.join("")}</nav></div>`;
+    clock(); setInterval(clock, 1000);
   }
   function filterBar() {
     const groups = resorGroups();
@@ -317,13 +325,14 @@
       if (!groups.has(r.grp)) groups.set(r.grp, []);
       groups.get(r.grp).push(r);
     }
-    el.innerHTML = legend(keys.map((k) => [k, colorOf(k)])) + `<div class="map"></div>`;
+    el.innerHTML = legend(keys.map((k) => [k, colorOf(k)])) + `<div class="map-frame"><div class="map"></div></div>`;
     if (!groups.size) { $(".map", el).innerHTML = '<div class="empty" style="padding:20px">Tidak ada koordinat pada periode ini.</div>'; return; }
     const map = L.map($(".map", el), { scrollWheelZoom: false, preferCanvas: true });
     maps.push(map);
     const sat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 18, attribution: "Citra: Esri" });
     const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18, attribution: "© OpenStreetMap" });
-    sat.addTo(map);
+    const dark = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { maxZoom: 18, subdomains: "abcd", attribution: "© OpenStreetMap © CARTO" });
+    dark.addTo(map);
     // Layer GeoJSON tambahan: kosong sampai dicentang, baru dimuat saat itu supaya halaman tetap ringan.
     const overlays = {};
     for (const ly of C.LAYER_PETA || []) {
@@ -342,13 +351,13 @@
         }).addTo(g))
         .catch(() => { g.loaded = false; L.popup().setLatLng(map.getCenter()).setContent("File " + esc(g.cfg.file) + " belum ada di repositori.").openOn(map); });
     });
-    L.control.layers({ "Citra satelit": sat, "Peta jalan": osm }, overlays).addTo(map);
+    L.control.layers({ "Mode radar (gelap)": dark, "Citra satelit": sat, "Peta jalan": osm }, overlays).addTo(map);
     const b = [];
     for (const g of groups.values()) {
       const f = g[0];
       b.push([f.lat, f.lon]);
       const lines = g.slice(0, 6).map((x) => `${esc(x.c0)}${x.c1 ? " › " + esc(x.c1) : ""}${detailHint(x)}`).join("<br>");
-      L.circleMarker([f.lat, f.lon], { radius: 5, weight: 1, color: "#ffffff", fillColor: colorOf(keyOf(f)), fillOpacity: 0.9 })
+      L.circleMarker([f.lat, f.lon], { radius: 5, weight: 1, color: "#e6f4f2", opacity: 0.7, fillColor: colorOf(keyOf(f)), fillOpacity: 0.9 })
         .bindPopup(`<b>${dLabel(f.d)}</b> · WP ${esc(f.r["Waypoint ID"])} · ${esc(resorOf(f))}<br>${lines}${g.length > 6 ? "<br>+" + (g.length - 6) + " lainnya" : ""}`)
         .addTo(map);
     }
@@ -750,6 +759,7 @@
     Chart.defaults.font.family = css("--f-body");
     Chart.defaults.color = css("--muted");
     Chart.defaults.borderColor = css("--line");
+    Chart.defaults.font.size = 11;
     const cat = M.find((c) => c.slug === PAGE);
     if (cat) renderKategori(cat); else renderKawasan();
     if (S.sheetError) $("#content").insertAdjacentHTML("afterbegin", sheetNotice());
