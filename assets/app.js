@@ -239,11 +239,13 @@
   }
   function chrome() {
     const cat = M.find((c) => c.slug === PAGE);
-    const title = cat ? cat.short : "Overview Kawasan";
-    const lede = cat ? cat.desc : "Rekap seluruh observasi SMART Patrol di " + C.NAMA_KAWASAN + ".";
+    const unduh = PAGE === "unduh";
+    const title = cat ? cat.short : unduh ? "Unduh Data" : "Overview Kawasan";
+    const lede = cat ? cat.desc : unduh ? "Pilih kategori, wilayah, dan periode, lalu unduh datanya sebagai Excel (xlsx) atau shapefile (shp)." : "Rekap seluruh observasi SMART Patrol di " + C.NAMA_KAWASAN + ".";
     const counts = Object.fromEntries(countBy(S.all, (x) => x.c0));
-    const tabs = [`<a href="index.html"${!cat ? ' aria-current="page"' : ""}>Overview Kawasan</a>`]
-      .concat(M.map((c) => `<a href="${c.slug}.html"${cat === c ? ' aria-current="page"' : ""}>${esc(c.short)}<span class="count">${fmt(counts[c.name] || 0)}</span></a>`));
+    const tabs = [`<a href="index.html"${PAGE === "kawasan" ? ' aria-current="page"' : ""}>Overview Kawasan</a>`]
+      .concat(M.map((c) => `<a href="${c.slug}.html"${cat === c ? ' aria-current="page"' : ""}>${esc(c.short)}<span class="count">${fmt(counts[c.name] || 0)}</span></a>`))
+      .concat(`<a href="unduh.html" class="tab-unduh"${unduh ? ' aria-current="page"' : ""}>Unduh Data</a>`);
     document.title = title + " · Data SMART Patrol";
     const last = S.all.reduce((m, x) => (x.d && (!m || x.d > m) ? x.d : m), null);
     $("#band").innerHTML = `${radar()}<div class="band-inner">
@@ -752,6 +754,84 @@
     return `<div class="attr"><h4>${esc(f)}${n}</h4>${hbars(e, { limit: 10, label })}</div>`;
   }
 
+  /* ---------------- unduh data ---------------- */
+  const U = { cats: null, fmt: "xlsx" };
+  // Kolom inti di depan setiap tabel unduhan; sisanya kolom data model kategori yang terisi.
+  const CORE_OUT = [
+    ["Waypoint ID", (x) => x.r["Waypoint ID"]], ["Tanggal", (x) => x.day], ["Waktu", (x) => x.r["Waypoint Time"]],
+    ["SPTN", (x) => sptnOf(resorOf(x))], ["Resor", (x) => resorOf(x)], ["X (bujur)", (x) => x.lon, "N"], ["Y (lintang)", (x) => x.lat, "N"],
+    ["Kategori 0", (x) => x.c0], ["Kategori 1", (x) => x.c1],
+  ];
+  const TAIL_OUT = [["Komentar", (x) => x.r.Comment], ["Observation Group", (x) => x.r["Observation Group"]]];
+  const SKIP_RAW = new Set(["Source", "Waypoint ID", "Waypoint Date", "Waypoint Time", "X", "Y", "Comment", "Last Modified",
+    "Last Modified By", "Observation Category 0", "Observation Category 1", "Observation Group"]);
+  function exportTable(name, rows) {
+    const cat = M.find((c) => c.name === name);
+    const pool = cat ? [...new Set(cat.fields.concat(...cat.subs.map((s) => s.fields)))]
+      : [...new Set(rows.flatMap((x) => Object.keys(x.r)))].filter((f) => !SKIP_RAW.has(f) && !C.RESOR_COLUMNS.some((c) => hkey(c) === hkey(f)));
+    const fields = pool.filter((f) => !isHidden(name, f) && rows.some((x) => val(x, f)));
+    const cols = CORE_OUT.concat(fields.map((f) => [alias(f), (x) => val(x, f), NUM.has(f) ? "N" : "C"]), TAIL_OUT);
+    const conv = (c, x) => { const v = c[1](x); if (c[2] === "N") { const n = num(v); return n == null ? "" : n; } return v ?? ""; };
+    return {
+      name, cols: cols.map((c) => c[0]), types: cols.map((c) => c[2] || "C"),
+      rows: rows.map((x) => cols.map((c) => conv(c, x))),
+      pts: rows.map((x) => (x.lon != null && x.lat != null && (x.lon || x.lat) ? [x.lon, x.lat] : null)),
+    };
+  }
+  function renderUnduh() {
+    const groups = countBy(S.rows, (x) => x.c0);
+    const order = M.map((c) => c.name).concat(groups.map((g) => g[0]).filter((n) => !M.some((c) => c.name === n)));
+    const cnt = Object.fromEntries(groups);
+    if (!U.cats) U.cats = new Set(order);
+    const picked = order.filter((n) => U.cats.has(n) && cnt[n]);
+    const total = picked.reduce((a, n) => a + cnt[n], 0);
+    $("#content").innerHTML = `
+      <section class="panel"><h2>Pilih data</h2>
+        <p class="sub">Data mengikuti filter wilayah/resor dan periode di atas (${esc(scopeLabel())} · ${esc(periodLabel())}). Setiap kategori menjadi satu sheet Excel atau satu layer shapefile.</p>
+        <div class="table-tools"><button type="button" class="btn" id="u-all">Pilih semua</button><button type="button" class="btn" id="u-none">Kosongkan</button></div>
+        <div class="pick-grid">${order.map((n) => `<label class="pick${cnt[n] ? "" : " off"}"><input type="checkbox" value="${esc(n)}"${U.cats.has(n) ? " checked" : ""}${cnt[n] ? "" : " disabled"}><span class="t">${esc((M.find((c) => c.name === n) || { short: n }).short)}</span><span class="v">${fmt(cnt[n] || 0)}</span></label>`).join("")}</div>
+      </section>
+      <section class="panel"><h2>Format file</h2>
+        <div class="fmt-grid">
+          <label class="pick fmt"><input type="radio" name="u-fmt" value="xlsx"${U.fmt === "xlsx" ? " checked" : ""}><span class="t">Excel (.xlsx)</span><span class="d">Satu sheet per kategori, ditambah sheet Info. Cocok untuk rekap dan tabel.</span></label>
+          <label class="pick fmt"><input type="radio" name="u-fmt" value="shp"${U.fmt === "shp" ? " checked" : ""}><span class="t">Shapefile (.zip)</span><span class="d">Titik WGS 84 per kategori, siap dibuka di QGIS/ArcGIS. Nama kolom dipendekkan (maks 10 huruf); daftar lengkapnya di kamus_kolom.csv.</span></label>
+        </div>
+        <div class="dl-bar"><button type="button" class="btn on big" id="u-go"${total ? "" : " disabled"}>Unduh ${fmt(total)} observasi</button><span class="meta" id="u-msg">${picked.length} kategori dipilih</span></div>
+      </section>`;
+    const boxes = [...document.querySelectorAll('.pick-grid input')];
+    boxes.forEach((b) => (b.onchange = () => { b.checked ? U.cats.add(b.value) : U.cats.delete(b.value); renderUnduh(); }));
+    $("#u-all").onclick = () => { U.cats = new Set(order); renderUnduh(); };
+    $("#u-none").onclick = () => { U.cats = new Set(); renderUnduh(); };
+    document.querySelectorAll('input[name="u-fmt"]').forEach((r) => (r.onchange = () => { U.fmt = r.value; }));
+    $("#u-go").onclick = async () => {
+      const btn = $("#u-go"), msg = $("#u-msg");
+      btn.disabled = true; msg.textContent = "Menyiapkan file…";
+      try {
+        const tables = picked.map((n) => exportTable(n, S.rows.filter((x) => x.c0 === n)));
+        const stamp = new Date().toISOString().slice(0, 10);
+        const scope = scopeLabel().replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        const info = [["Sumber", C.SUMBER || S.source], ["Kawasan", C.NAMA_KAWASAN], ["Wilayah", scopeLabel()], ["Periode", periodLabel()],
+          ["Kategori", picked.join(", ")], ["Jumlah observasi", String(total)], ["Diunduh", new Date().toLocaleString("id-ID")]];
+        const base = `SMART-Patrol_${scope}_${S.from || ""}_${S.to || ""}_${stamp}`;
+        if (U.fmt === "xlsx") {
+          await window.SMART_EXPORT.xlsx(tables, info, base + ".xlsx");
+        } else {
+          const layers = tables.map((t) => {
+            const keep = t.pts.map((p, i) => (p ? i : -1)).filter((i) => i >= 0);
+            return { name: t.name, type: 1, cols: t.cols, types: t.types, rows: keep.map((i) => t.rows[i]), geoms: keep.map((i) => t.pts[i]) };
+          });
+          const noXY = tables.reduce((a, t) => a + t.pts.filter((p) => !p).length, 0);
+          if (noXY) info.push(["Catatan", noXY + " observasi tanpa koordinat tidak dimasukkan ke shapefile"]);
+          await window.SMART_EXPORT.shpZip(layers, info, base + "_shp.zip");
+        }
+        msg.textContent = "Selesai. File sudah diunduh.";
+      } catch (e) {
+        msg.textContent = "Gagal membuat file: " + e.message;
+      }
+      btn.disabled = false;
+    };
+  }
+
   /* ---------------- render ---------------- */
   function render() {
     while (charts.length) charts.pop().destroy();
@@ -761,7 +841,7 @@
     Chart.defaults.borderColor = css("--line");
     Chart.defaults.font.size = 11;
     const cat = M.find((c) => c.slug === PAGE);
-    if (cat) renderKategori(cat); else renderKawasan();
+    if (cat) renderKategori(cat); else if (PAGE === "unduh") renderUnduh(); else renderKawasan();
     if (S.sheetError) $("#content").insertAdjacentHTML("afterbegin", sheetNotice());
   }
 
