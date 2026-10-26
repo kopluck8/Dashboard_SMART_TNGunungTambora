@@ -30,7 +30,7 @@
   const EN = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
   const BULAN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
-  const S = { all: [], rows: [], hasResor: false, demo: false, resor: "", from: "", to: "", source: "", capaian: [] };
+  const S = { all: [], rows: [], tracks: [], hasResor: false, demo: false, resor: "", from: "", to: "", source: "", capaian: [] };
   const ALIAS = C.ALIAS || {};
   const alias = (n) => ALIAS[n] || n;
   const STATUS = window.SMART_STATUS || {};
@@ -142,13 +142,46 @@
       error: () => res({ ...item, data: null, err: true }),
     }));
   }
-  async function load() {
-    S.capaian = await Promise.all((C.CAPAIAN || []).map(loadCapaian));
+  async function loadSheet() {
     if (C.SHEET_CSV_URL) {
-      try { const d = await loadCSV(C.SHEET_CSV_URL); S.source = "Google Sheets"; return d; }
+      try { const d = await loadCSV(C.SHEET_CSV_URL); return { d, src: "Google Sheets" }; }
       catch (e) { console.warn("Google Sheets tidak terbaca, memakai file cadangan", e); S.sheetError = e; }
     }
-    const d = await loadCSV(C.FALLBACK_CSV); S.source = C.FALLBACK_CSV; return d;
+    if (!C.FALLBACK_CSV) return null;
+    try { return { d: await loadCSV(C.FALLBACK_CSV), src: C.FALLBACK_CSV }; }
+    catch (e) { console.warn("File cadangan tidak terbaca", e); return null; }
+  }
+  // Data dari file patroli SMART di Drive (data/patroli-observasi.csv, dibuat GitHub Action). Boleh belum ada.
+  async function loadDrive() {
+    if (!C.DATA_DRIVE) return null;
+    try { return { d: await loadCSV(C.DATA_DRIVE), src: "file patroli Drive" }; }
+    catch (e) { console.warn("Data patroli Drive tidak terbaca", e); return null; }
+  }
+  // Jalur patroli (GeoJSON per leg patroli), dimuat sekali dan dipakai peta serta halaman unduh.
+  let tracksP = null;
+  function loadTracks() {
+    if (!C.JALUR_PATROLI) return Promise.resolve([]);
+    if (!tracksP) tracksP = fetch(C.JALUR_PATROLI).then((r) => (r.ok ? r.json() : { features: [] }))
+      .then((gj) => (gj.features || []).filter((f) => f.geometry)).catch(() => []);
+    return tracksP;
+  }
+  const hms = (t) => {
+    const m = /^(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?\s*([AP])?/i.exec(String(t || "").trim());
+    if (!m) return "";
+    let h = +m[1] % (m[4] ? 12 : 24); if (m[4] && /p/i.test(m[4])) h += 12;
+    return pad(h) + ":" + m[2] + ":" + (m[3] || "00");
+  };
+  const wpKey = (x) => x.day + " " + hms(x.r["Waypoint Time"]) + " " + (x.lon ?? 0).toFixed(5) + " " + (x.lat ?? 0).toFixed(5);
+  async function load() {
+    S.capaian = await Promise.all((C.CAPAIAN || []).map(loadCapaian));
+    const [drive, sheet] = await Promise.all([loadDrive(), loadSheet()]);
+    if (!drive && !sheet) throw new Error("tidak ada sumber data");
+    const dr = drive ? normalize(drive.d) : [], sh = sheet ? normalize(sheet.d) : [];
+    // Gabungkan: waypoint yang sudah ada di file patroli Drive tidak diambil lagi dari spreadsheet.
+    const seen = new Set(dr.map(wpKey));
+    const extra = sh.filter((x) => !seen.has(wpKey(x)));
+    S.source = [drive && drive.src, extra.length && sheet.src].filter(Boolean).join(" + ");
+    return dr.concat(extra).sort((a, b) => (b.d || 0) - (a.d || 0));
   }
   function sheetNotice() {
     const e = S.sheetError;
@@ -175,7 +208,7 @@
   function normalize(raw) {
     const cols = Object.keys(raw[0] || {});
     const rc = cols.find((c) => C.RESOR_COLUMNS.some((x) => hkey(x) === hkey(c)));
-    S.hasResor = !!rc;
+    S.hasResor = S.hasResor || !!rc;
     detectDateOrder(raw.map((r) => r["Waypoint Date"]));
     const rows = raw.filter((r) => (r["Observation Category 0"] || "").trim()).map((r) => {
       const d = parseDate(r["Waypoint Date"]);
@@ -209,7 +242,13 @@
   const scopeLabel = () => (!S.resor ? "seluruh kawasan" : S.resor.startsWith("sptn:") ? S.resor.slice(5) : S.resor);
   function applyFilter() {
     S.rows = S.all.filter((x) => matchScope(x) && (!S.from || x.ym >= S.from) && (!S.to || x.ym <= S.to));
+    S.trackRows = S.tracks.filter((f) => {
+      const p = f.properties || {}, ym = String(p["Tanggal mulai"] || "").slice(0, 7), rs = p.Resor || C.RESOR_KOSONG;
+      const inScope = !S.resor || (S.resor.startsWith("sptn:") ? (sptnOf(rs) || p.SPTN) === S.resor.slice(5) : rs === S.resor);
+      return inScope && (!S.from || ym >= S.from) && (!S.to || ym <= S.to);
+    });
   }
+  const trackKm = (fs) => fs.reduce((a, f) => a + (+f.properties["Panjang jalur (km)"] || 0), 0);
   function monthRange(rows) {
     const ys = rows.map((x) => x.ym).filter(Boolean).sort();
     if (!ys.length) return [];
@@ -337,6 +376,20 @@
     dark.addTo(map);
     // Layer GeoJSON tambahan: kosong sampai dicentang, baru dimuat saat itu supaya halaman tetap ringan.
     const overlays = {};
+    let tl = null;
+    if (S.tracks.length) {
+      // Pane sendiri di bawah titik, supaya titik temuan tetap bisa diklik.
+      map.createPane("jalur").style.zIndex = 350;
+      tl = L.geoJSON({ type: "FeatureCollection", features: S.trackRows }, {
+        pane: "jalur", renderer: L.canvas({ pane: "jalur" }),
+        style: () => ({ color: css("--accent"), weight: 2, opacity: 0.75 }),
+        onEachFeature: (f, l) => {
+          const p = f.properties || {};
+          l.bindTooltip(`<b>${esc(p.ST)}</b><br>${esc(p["Tanggal mulai"])}${p["Tanggal selesai"] && p["Tanggal selesai"] !== p["Tanggal mulai"] ? " s.d. " + esc(p["Tanggal selesai"]) : ""}<br>${esc(p.Mandat)}<br>${esc(p.Resor || p.SPTN)} · ${fmt(+p["Panjang jalur (km)"] || 0, 1)} km${p.Ketua ? "<br>Ketua: " + esc(p.Ketua) : ""}`, { sticky: true });
+        },
+      });
+      overlays[`Jalur patroli (${fmt(S.trackRows.length)})`] = tl;
+    }
     for (const ly of C.LAYER_PETA || []) {
       const group = L.layerGroup();
       group.cfg = ly;
@@ -364,6 +417,8 @@
         .addTo(map);
     }
     map.fitBounds(b, { padding: [24, 24], maxZoom: 14 });
+    // Jalur ditambahkan setelah peta punya batas tampilan (renderer canvas membutuhkannya).
+    if (tl && PAGE === "kawasan") tl.addTo(map);
   }
   function detailHint(x) {
     const sp = val(x, "Jenis satwa") || val(x, "Jenis tumbuhan");
@@ -501,6 +556,7 @@
       ${kpis([
         { v: fmt(rows.length), l: "Observasi tercatat", n: scope + " · " + periodLabel() },
         { v: fmt(uniq(rows.map((x) => x.grp))), l: "Titik temuan (waypoint)" },
+        ...(S.tracks.length ? [{ v: fmt(trackKm(S.trackRows), 1), l: "Panjang jalur patroli (km)", n: fmt(uniq(S.trackRows.map((f) => f.properties.ST))) + " ST · dari file patroli Drive" }] : []),
         ...capaianKpis(),
         { v: fmt(sp("Jenis satwa")), l: "Jenis satwa tercatat" },
         { v: fmt(sp("Jenis tumbuhan")), l: "Jenis tumbuhan tercatat" },
@@ -516,7 +572,7 @@
       <section class="panel" id="resor"><h2>Rekap per resor</h2><p class="sub">Klik baris resor untuk mengerucutkan seluruh dashboard ke resor tersebut. Pilih “Seluruh kawasan” di atas untuk kembali ke tingkat kawasan.</p>
         ${resorNotice()}<div style="height:12px"></div>${resorTable(rows, keysC0.map((k) => (k === OTHER ? OTHER : M.find((m) => m.name === k)?.short || k)), (x) => { const k = keyC0(x); return k === OTHER ? OTHER : M.find((m) => m.name === k)?.short || k; }, "Total " + scope)}
         <div id="ch-resor" style="margin-top:18px"></div></section>
-      <section class="panel"><h2>Peta sebaran temuan</h2><p class="sub">Setiap titik adalah satu waypoint; klik titik untuk melihat isinya. Layer batas kawasan, resor, grid, dan jalur bisa dinyalakan dari tombol layer di pojok kanan atas peta.</p><div id="map-all"></div></section>
+      <section class="panel"><h2>Peta sebaran temuan</h2><p class="sub">Setiap titik adalah satu waypoint; klik titik untuk melihat isinya. Garis hijau toska adalah jalur patroli. Layer batas kawasan, resor, grid, dan jalur bisa dinyalakan dari tombol layer di pojok kanan atas peta.</p><div id="map-all"></div></section>
       <section class="panel"><h2>Perlu perhatian</h2><p class="sub">Aktivitas Manusia menurut status pelanggaran; kategori lain yang perlu tindak lanjut atau kondisinya rusak/roboh.</p><div id="t-flag"></div></section>`;
 
     stackedMonthly($("#ch-trend"), rows, keyC0, keysC0, colC0);
@@ -755,7 +811,7 @@
   }
 
   /* ---------------- unduh data ---------------- */
-  const U = { cats: null, fmt: "xlsx" };
+  const U = { cats: null, fmt: "xlsx", jalur: true };
   // Kolom inti di depan setiap tabel unduhan; sisanya kolom data model kategori yang terisi.
   const CORE_OUT = [
     ["Waypoint ID", (x) => x.r["Waypoint ID"]], ["Tanggal", (x) => x.day], ["Waktu", (x) => x.r["Waypoint Time"]],
@@ -785,41 +841,53 @@
     if (!U.cats) U.cats = new Set(order);
     const picked = order.filter((n) => U.cats.has(n) && cnt[n]);
     const total = picked.reduce((a, n) => a + cnt[n], 0);
+    const tr = S.trackRows || [], useTr = U.jalur && tr.length > 0;
     $("#content").innerHTML = `
       <section class="panel"><h2>Pilih data</h2>
         <p class="sub">Data mengikuti filter wilayah/resor dan periode di atas (${esc(scopeLabel())} · ${esc(periodLabel())}). Setiap kategori menjadi satu sheet Excel atau satu layer shapefile.</p>
         <div class="table-tools"><button type="button" class="btn" id="u-all">Pilih semua</button><button type="button" class="btn" id="u-none">Kosongkan</button></div>
         <div class="pick-grid">${order.map((n) => `<label class="pick${cnt[n] ? "" : " off"}"><input type="checkbox" value="${esc(n)}"${U.cats.has(n) ? " checked" : ""}${cnt[n] ? "" : " disabled"}><span class="t">${esc((M.find((c) => c.name === n) || { short: n }).short)}</span><span class="v">${fmt(cnt[n] || 0)}</span></label>`).join("")}</div>
+        ${S.tracks.length ? `<h3 style="margin-top:16px">Jalur patroli</h3><div class="pick-grid"><label class="pick${tr.length ? "" : " off"}"><input type="checkbox" id="u-jalur"${U.jalur ? " checked" : ""}${tr.length ? "" : " disabled"}><span class="t">Jalur patroli</span><span class="v">${fmt(tr.length)}</span><span class="d">Satu garis per leg patroli: ST, tanggal, mandat, ketua, jumlah anggota, panjang (km).</span></label></div>` : ""}
       </section>
       <section class="panel"><h2>Format file</h2>
         <div class="fmt-grid">
           <label class="pick fmt"><input type="radio" name="u-fmt" value="xlsx"${U.fmt === "xlsx" ? " checked" : ""}><span class="t">Excel (.xlsx)</span><span class="d">Satu sheet per kategori, ditambah sheet Info. Cocok untuk rekap dan tabel.</span></label>
-          <label class="pick fmt"><input type="radio" name="u-fmt" value="shp"${U.fmt === "shp" ? " checked" : ""}><span class="t">Shapefile (.zip)</span><span class="d">Titik WGS 84 per kategori, siap dibuka di QGIS/ArcGIS. Nama kolom dipendekkan (maks 10 huruf); daftar lengkapnya di kamus_kolom.csv.</span></label>
+          <label class="pick fmt"><input type="radio" name="u-fmt" value="shp"${U.fmt === "shp" ? " checked" : ""}><span class="t">Shapefile (.zip)</span><span class="d">Titik WGS 84 per kategori (dan garis untuk jalur patroli), siap dibuka di QGIS/ArcGIS. Nama kolom dipendekkan (maks 10 huruf); daftar lengkapnya di kamus_kolom.csv.</span></label>
         </div>
-        <div class="dl-bar"><button type="button" class="btn on big" id="u-go"${total ? "" : " disabled"}>Unduh ${fmt(total)} observasi</button><span class="meta" id="u-msg">${picked.length} kategori dipilih</span></div>
+        <div class="dl-bar"><button type="button" class="btn on big" id="u-go"${total || useTr ? "" : " disabled"}>Unduh ${fmt(total)} observasi${useTr ? " + " + fmt(tr.length) + " jalur" : ""}</button><span class="meta" id="u-msg">${picked.length} kategori dipilih</span></div>
       </section>`;
     const boxes = [...document.querySelectorAll('.pick-grid input')];
     boxes.forEach((b) => (b.onchange = () => { b.checked ? U.cats.add(b.value) : U.cats.delete(b.value); renderUnduh(); }));
     $("#u-all").onclick = () => { U.cats = new Set(order); renderUnduh(); };
     $("#u-none").onclick = () => { U.cats = new Set(); renderUnduh(); };
+    if ($("#u-jalur")) $("#u-jalur").onchange = (e) => { U.jalur = e.target.checked; renderUnduh(); };
     document.querySelectorAll('input[name="u-fmt"]').forEach((r) => (r.onchange = () => { U.fmt = r.value; }));
     $("#u-go").onclick = async () => {
       const btn = $("#u-go"), msg = $("#u-msg");
       btn.disabled = true; msg.textContent = "Menyiapkan file…";
       try {
         const tables = picked.map((n) => exportTable(n, S.rows.filter((x) => x.c0 === n)));
+        let jalur = null;
+        if (useTr) {
+          const cols = Object.keys(tr[0].properties);
+          jalur = { name: "Jalur patroli", cols, types: cols.map((c) => (tr.every((f) => f.properties[c] === "" || typeof f.properties[c] === "number") ? "N" : "C")),
+            rows: tr.map((f) => cols.map((c) => f.properties[c] ?? "")),
+            geoms: tr.map((f) => (f.geometry.type === "LineString" ? [f.geometry.coordinates] : f.geometry.coordinates)) };
+        }
         const stamp = new Date().toISOString().slice(0, 10);
         const scope = scopeLabel().replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "");
         const info = [["Sumber", C.SUMBER || S.source], ["Kawasan", C.NAMA_KAWASAN], ["Wilayah", scopeLabel()], ["Periode", periodLabel()],
           ["Kategori", picked.join(", ")], ["Jumlah observasi", String(total)], ["Diunduh", new Date().toLocaleString("id-ID")]];
+        if (jalur) info.push(["Jalur patroli", jalur.rows.length + " leg, " + fmt(trackKm(tr), 1) + " km (dari file patroli Drive)"]);
         const base = `SMART-Patrol_${scope}_${S.from || ""}_${S.to || ""}_${stamp}`;
         if (U.fmt === "xlsx") {
-          await window.SMART_EXPORT.xlsx(tables, info, base + ".xlsx");
+          await window.SMART_EXPORT.xlsx(jalur ? tables.concat(jalur) : tables, info, base + ".xlsx");
         } else {
           const layers = tables.map((t) => {
             const keep = t.pts.map((p, i) => (p ? i : -1)).filter((i) => i >= 0);
             return { name: t.name, type: 1, cols: t.cols, types: t.types, rows: keep.map((i) => t.rows[i]), geoms: keep.map((i) => t.pts[i]) };
           });
+          if (jalur) layers.push({ ...jalur, type: 3 });
           const noXY = tables.reduce((a, t) => a + t.pts.filter((p) => !p).length, 0);
           if (noXY) info.push(["Catatan", noXY + " observasi tanpa koordinat tidak dimasukkan ke shapefile"]);
           await window.SMART_EXPORT.shpZip(layers, info, base + "_shp.zip");
@@ -849,7 +917,8 @@
     const q = new URLSearchParams(location.search);
     if (q.has("embed") || location.hash === "#embed") document.body.classList.add("embed");
     try {
-      S.all = normalize(await load());
+      S.all = await load();
+      S.tracks = await loadTracks();
     } catch (e) {
       $("#content").innerHTML = `<div class="notice"><strong>Data tidak dapat dimuat.</strong> Periksa tautan Google Sheets di assets/config.js atau file ${esc(C.FALLBACK_CSV)}.</div>`;
       return;

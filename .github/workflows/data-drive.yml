@@ -1,0 +1,47 @@
+# Ambil file patroli SMART (zip per ST) dari folder Google Drive, gabungkan, lalu simpan hasilnya di data/.
+# Berjalan setiap hari pukul 06.00 WITA, dan bisa dijalankan manual dari tab Actions > "Perbarui data dari Drive" > Run workflow.
+name: Perbarui data dari Drive
+
+on:
+  schedule:
+    - cron: "0 22 * * *"   # 22.00 UTC = 06.00 WITA
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-drive
+  cancel-in-progress: false
+
+env:
+  # Folder Drive "FilePatrol_SMART" (harus dibagikan: siapa saja yang memiliki link dapat melihat)
+  DRIVE_FOLDER_ID: 1jbIZULr8a7GlMvO1kcDtUZxQ-v1CxgD_
+
+jobs:
+  perbarui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Unduh file patroli dari Drive
+        run: python scripts/ambil_drive.py "$DRIVE_FOLDER_ID" "$RUNNER_TEMP/patroli"
+
+      - name: Gabungkan dan ubah ke CSV + GeoJSON
+        run: python scripts/konversi_patroli.py "$RUNNER_TEMP/patroli" data/datamodel.xml data/kamus-smart.json data
+
+      - name: Simpan bila ada perubahan
+        run: |
+          git add data/patroli-observasi.csv data/patroli-ringkasan.csv data/jalur-patroli.geojson
+          if git diff --cached --quiet; then
+            echo "Data tidak berubah."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Perbarui data patroli dari Drive"
+            git push
+          fi

@@ -34,6 +34,20 @@ Tambahkan `?embed=1` di akhir alamat untuk menyembunyikan kepala halaman saat di
 
 Bila tautan kosong atau tidak bisa dibaca, dashboard memakai `data/data.csv`.
 
+## Data dari file patroli SMART di Google Drive
+
+Dashboard juga membaca file patroli SMART (satu zip per surat tugas/ST, hasil Export Patrol di SMART Desktop) dari folder Drive **FilePatrol_SMART**. Cukup unggah file ST baru ke folder itu; tidak perlu mengisi spreadsheet lagi.
+
+- GitHub Action **Perbarui data dari Drive** (`.github/workflows/data-drive.yml`) berjalan setiap hari pukul 06.00 WITA. Untuk memperbarui segera: tab **Actions** > Perbarui data dari Drive > **Run workflow**.
+- Action mengunduh semua zip, menggabungkan isinya, membuang waypoint ganda, lalu menulis:
+  - `data/patroli-observasi.csv`: satu baris per observasi, kolom sama seperti ekspor query SMART, ditambah `Resor`, `SPTN`, `ST`, `Foto`.
+  - `data/patroli-ringkasan.csv`: satu baris per leg patroli (ST, mandat, tanggal, ketua, anggota, panjang jalur).
+  - `data/jalur-patroli.geojson`: jalur (track) tiap leg, tampil di peta dan bisa diunduh di tab Unduh Data.
+- Folder Drive harus dibagikan "Siapa saja yang memiliki link dapat melihat". ID foldernya ada di `DRIVE_FOLDER_ID` dalam file workflow.
+- **Resor** ditentukan dari posisi titik terhadap `assets/resor.geojson` (file patroli hanya menyimpan SPTN). Titik di luar batas sampai 3 km masuk ke resor terdekat.
+- **Nama kategori, atribut, dan jenis**: file patroli hanya berisi kode SMART. Kode diterjemahkan dengan `data/datamodel.xml` (ekspor data model SMART) bila ada, atau dengan `data/kamus-smart.json` yang disusun dari data spreadsheet. Jenis baru yang belum ada di keduanya tampil sebagai potongan kodenya; unggah ulang `datamodel.xml` setelah data model berubah.
+- Data Drive digabung dengan data spreadsheet (`SHEET_CSV_URL`). Waypoint yang ada di keduanya diambil dari file patroli. Setelah semua ST lama sudah ada di Drive, `SHEET_CSV_URL` boleh dikosongkan. Lokasi file diatur di `DATA_DRIVE` dan `JALUR_PATROLI` pada `assets/config.js`.
+
 ## Privasi
 
 Saat ini semua nama (masyarakat, pelaku indikatif, kelompok, kode ternak) ditampilkan, sesuai keputusan 8 Oktober 2026. Bila nanti perlu disembunyikan lagi, isi `SEMBUNYIKAN` di `assets/config.js`, misalnya `"Aktivitas Manusia": ["Nama pelaku", "Nama pelaku indikatif"]`. Ingat bahwa CSV yang dipublikasikan dari Google Sheets tetap bisa dibuka siapa saja yang tahu tautannya.

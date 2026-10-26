@@ -7,6 +7,12 @@ window.SMART_CONFIG = {
   // File cadangan bila Google Sheets tidak bisa dibaca.
   FALLBACK_CSV: "data/data.csv",
 
+  // Data dari file patroli SMART (zip per ST) di folder Google Drive, diolah otomatis setiap hari oleh
+  // GitHub Action (.github/workflows/data-drive.yml). Digabung dengan data spreadsheet di atas; waypoint
+  // yang ada di keduanya diambil dari file patroli. Kosongkan untuk tidak memakai data Drive.
+  DATA_DRIVE: "data/patroli-observasi.csv",
+  JALUR_PATROLI: "data/jalur-patroli.geojson",
+
   // Nama kolom resor yang akan ditambahkan di spreadsheet (tidak peka huruf besar/kecil).
   RESOR_COLUMNS: ["Resor", "Resort", "Nama Resor"],
 
