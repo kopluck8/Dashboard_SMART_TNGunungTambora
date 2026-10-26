@@ -12,6 +12,10 @@
    "Aktivitas Manusia",
    "Pembalakan"
   ],
+  "aktivitasmanusia.pembuatanaksesjalan.": [
+   "Aktivitas Manusia",
+   "Pembuatan Akses Jalan"
+  ],
   "aktivitasmanusia.pengambilanhhbk.": [
    "Aktivitas Manusia",
    "Pengambilan HHBK"
@@ -113,6 +117,7 @@
   "perlutindaklanjut": "Perlu tindak lanjut",
   "satuan": "Satuan",
   "status": "Status",
+  "tandaaktifitas": "Tanda aktifitas",
   "tindakan": "Tindakan",
   "tipetemuan": "Tipe temuan",
   "umursatwa": "Umur satwa",
